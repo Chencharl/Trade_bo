@@ -32,13 +32,15 @@ TradeBo can load US-listed equities through [Alpha Vantage](https://www.alphavan
 
 ```bash
 export ALPHA_VANTAGE_API_KEY="your_key_here"
-export TRADEBOT_SYMBOLS="AAPL,MSFT,NVDA"
+export TRADEBOT_SYMBOLS="AAPL"
 python3 -m backend.server
 ```
 
 Choose **Provider** in the interface. Symbol Search must identify each ticker as `United States / Equity`. The server then requests daily closes, ticker news, and a company overview. The loaded universe is limited to eight symbols. Provider errors and quota limits are surfaced to the user; the interface does not present sample data as provider data. The initial provider-mode portfolio is an explicitly labeled, empty **example model** with $100,000 cash. Enter and verify your own account inputs before interpreting its allocation context. The model stays in the browser session and is sent to the local server for recalculation; it is not persisted.
 
-Provider daily closes are **unadjusted** in this release. Corporate actions, delayed or incomplete feeds, and provider sentiment errors can distort signals. The article filter requires an explicit ticker tag, a timestamp within 72 hours, and a unique URL/headline. Two named sources are only a screening condition; they do not prove independent reporting or verify the article's claims.
+The adapter spaces uncached requests by at least 1.25 seconds to respect the free key's burst limit. Start with one ticker to conserve the provider's daily allowance; add more in the research screen as needed. See [Alpha Vantage's current usage limits](https://www.alphavantage.co/support/) before loading a larger universe.
+
+Provider daily closes are **unadjusted** in this release. Corporate actions, delayed or incomplete feeds, and provider sentiment errors can distort signals. The article filter requires an explicit ticker tag, a provider ticker-relevance score of at least 0.80, an issuer or ticker mention in the headline, a timestamp within 72 hours, and a unique URL/headline. Excluded articles remain countable and inspectable in the research screen. This strict headline screen can miss relevant stories using a product name or subsidiary instead of the issuer's name. Two named sources are only a screening condition; they do not prove independent reporting or verify the article's claims.
 
 ## Decision protocol
 

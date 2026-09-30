@@ -38,8 +38,13 @@ def _number(value: Any, name: str, low: float = 0, high: float = math.inf) -> fl
     return number
 
 
-def score_news(items: list[dict], symbol: str, now: datetime) -> list[dict]:
-    """Require an explicit ticker tag, recent timestamp, and distinct URL/headline."""
+def score_news(items: list[dict], symbol: str, company_name: str, now: datetime) -> list[dict]:
+    """Retain recent issuer-led headlines with a strong provider ticker link."""
+    generic = {"inc", "corp", "corporation", "company", "the", "group", "holdings",
+               "international", "technologies", "technology", "systems", "energy",
+               "medical", "industrial", "bancorp", "retail", "limited", "ltd"}
+    aliases = [word for word in re.findall(r"[a-z]{4,}", company_name.casefold())
+               if word not in generic]
     urls: set[str] = set()
     titles: set[str] = set()
     result = []
@@ -59,9 +64,21 @@ def score_news(items: list[dict], symbol: str, now: datetime) -> list[dict]:
         titles.add(title_key)
         explicit = symbol in [str(s).upper() for s in item.get("tickers", [])]
         recent = 0 <= age <= 72
+        try:
+            provider_score = float(item.get("ticker_relevance_score"))
+            provider_score = provider_score if math.isfinite(provider_score) else 0.0
+        except (TypeError, ValueError):
+            provider_score = 0.0
+        headline_match = (bool(re.search(r"(?<![a-z])" + re.escape(symbol.casefold()) + r"(?![a-z])", title_key))
+                          or any(re.search(r"\b" + re.escape(alias) + r"\b", title_key) for alias in aliases))
+        reason = ("No explicit ticker tag" if not explicit else
+                  "Outside the 72-hour window" if not recent else
+                  "Low provider ticker score" if provider_score < .8 else
+                  "Issuer absent from headline" if not headline_match else None)
         result.append({**item, "age_hours": round(age, 1),
-                       "relevance": round((.7 if explicit else 0) + (.3 if recent else 0), 2),
-                       "relevant": explicit and recent})
+                       "relevance": round(provider_score, 2),
+                       "headline_match": headline_match, "exclusion_reason": reason,
+                       "relevant": reason is None})
     return sorted(result, key=lambda x: (x["relevant"], x["relevance"], x["published_at"]), reverse=True)
 
 
@@ -210,7 +227,7 @@ def analyze_asset(asset: dict, portfolio: dict, now: datetime | None = None) -> 
     now = now or datetime.now(timezone.utc)
     symbol = asset["symbol"]
     market = market_snapshot(asset["bars"])
-    news = score_news(asset.get("news", []), symbol, now)
+    news = score_news(asset.get("news", []), symbol, asset["name"], now)
     relevant = [item for item in news if item["relevant"]]
     positive = sum(item.get("sentiment") == "positive" for item in relevant)
     negative = sum(item.get("sentiment") == "negative" for item in relevant)
@@ -286,6 +303,7 @@ def analyze_asset(asset: dict, portfolio: dict, now: datetime | None = None) -> 
         "market": market, "overview": overview, "news": news,
         "action": action, "reason": reason, "buy_gates": buy_gates,
         "sell_triggers": sell_triggers, "relevant_article_count": len(relevant),
+        "screened_article_count": len(news), "excluded_article_count": len(news) - len(relevant),
         "independent_source_count": independent_sources,
         "position_shares": held, "position_value": round(current_value, 2),
         "weight_pct": current_weight, "target_pct": target_pct,
