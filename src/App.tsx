@@ -468,6 +468,7 @@ function App() {
   }
   const active = board?.analyses.find((item) => item.symbol === selected) || board?.analyses[0]
   const relevantNews = active?.news.filter((item) => item.relevant) || []
+  const excludedNews = active?.news.filter((item) => !item.relevant) || []
   const paperCeiling =
     active?.action === 'REVIEW_ADD'
       ? active.suggested_max_add_shares
@@ -914,7 +915,7 @@ function App() {
                 </div>
                 <div className="security-summary-stat">
                   <span>RESEARCH STATUS</span>
-                  <strong>{active.relevant_article_count} articles</strong>
+                  <strong>{active.relevant_article_count} relevant</strong>
                   <small>{active.independent_source_count} named sources</small>
                 </div>
               </div>
@@ -995,7 +996,7 @@ function App() {
                       <span className="eyebrow">SOURCE REGISTER / N1+</span>
                       <h2>Relevant articles</h2>
                     </div>
-                    <span className="subtle">Explicit ticker tag · 72 hours</span>
+                    <span className="subtle">Issuer headline · ticker score ≥ 0.80 · 72 hours</span>
                   </div>
                   {relevantNews.length === 0 ? (
                     <p className="empty-copy">
@@ -1003,13 +1004,13 @@ function App() {
                       add cannot be justified by this feed.
                     </p>
                   ) : (
-                    relevantNews.map((item, index) => (
+                    relevantNews.slice(0, 12).map((item, index) => (
                       <article className="article-row" key={item.url}>
                         <div className="article-index">N{index + 1}</div>
                         <div>
                           <div className="article-meta">
                             {item.source} · {dateLabel(item.published_at)} · {item.sentiment} label
-                            · relevance {Math.round(item.relevance * 100)}%
+                            · provider ticker score {Math.round(item.relevance * 100)}%
                           </div>
                           <h3>
                             {mode === 'demo' ? (
@@ -1024,6 +1025,27 @@ function App() {
                         </div>
                       </article>
                     ))
+                  )}
+                  <div className="screen-summary">
+                    {active.screened_article_count} unique articles screened ·{' '}
+                    {active.excluded_article_count} excluded · showing{' '}
+                    {Math.min(relevantNews.length, 12)} of {relevantNews.length} retained
+                  </div>
+                  {excludedNews.length > 0 && (
+                    <details className="screen-audit">
+                      <summary>Inspect excluded articles</summary>
+                      <div>
+                        {excludedNews.slice(0, 8).map((item) => (
+                          <p key={item.url}>
+                            <strong>{item.exclusion_reason}</strong>
+                            <span>{item.title}</span>
+                          </p>
+                        ))}
+                        {excludedNews.length > 8 && (
+                          <small>Showing 8 of {excludedNews.length} exclusions.</small>
+                        )}
+                      </div>
+                    </details>
                   )}
                   <div className="table-caption">
                     Provider sentiment is metadata. Articles require original-source review before

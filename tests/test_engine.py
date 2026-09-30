@@ -4,7 +4,7 @@ from datetime import datetime, timedelta, timezone
 import unittest
 from unittest.mock import patch
 
-from backend.data import default_model, demo_assets, live_assets, validate_symbol
+from backend.data import _wait_for_provider_slot, default_model, demo_assets, live_assets, validate_symbol
 from backend.engine import analyze_asset, answer_question, build_dashboard, build_portfolio, score_news
 
 
@@ -66,7 +66,20 @@ class DecisionTests(unittest.TestCase):
         self.assertFalse(next(g for g in result["buy_gates"] if g["id"] == "news")["passed"])
         news = deepcopy(self.assets[0]["news"])
         news[1]["tickers"] = ["OTHER"]
-        self.assertEqual(sum(n["relevant"] for n in score_news(news, "ORBT", self.now)), 1)
+        self.assertEqual(sum(n["relevant"] for n in score_news(news, "ORBT", "Orbit Systems", self.now)), 1)
+
+    def test_provider_ticker_tag_alone_does_not_make_news_relevant(self):
+        article = deepcopy(self.assets[0]["news"][0])
+        article["tickers"] = ["AAPL"]
+        article["ticker_relevance_score"] = .95
+        result = score_news([article], "AAPL", "Apple Inc", self.now)[0]
+        self.assertFalse(result["relevant"])
+        self.assertEqual(result["exclusion_reason"], "Issuer absent from headline")
+        article["title"] = "Apple announces a product update"
+        article["ticker_relevance_score"] = .6
+        result = score_news([article], "AAPL", "Apple Inc", self.now)[0]
+        self.assertFalse(result["relevant"])
+        self.assertEqual(result["exclusion_reason"], "Low provider ticker score")
 
     def test_cash_reserve_blocks_add_and_policy_breach_triggers_reduce(self):
         model = deepcopy(self.model)
@@ -105,6 +118,22 @@ class DecisionTests(unittest.TestCase):
              patch("backend.data._query", return_value=response):
             with self.assertRaisesRegex(RuntimeError, "US-listed equity"):
                 live_assets(["AAPL"])
+
+    def test_single_ticker_example_target_respects_position_cap(self):
+        asset = deepcopy(self.assets[0])
+        asset["mode"] = "live"
+        model = default_model([asset])
+        self.assertEqual(model["targets"], {"ORBT": 20.0, "CASH": 80.0})
+        self.assertLessEqual(model["targets"]["ORBT"], model["policy"]["max_position_pct"])
+
+    def test_provider_calls_are_spaced_beyond_one_second(self):
+        with patch("backend.data._LAST_REQUEST_AT", float("-inf")), \
+             patch("backend.data.time.monotonic", side_effect=[100.0, 100.0, 100.2, 101.45]), \
+             patch("backend.data.time.sleep") as sleep:
+            _wait_for_provider_slot()
+            _wait_for_provider_slot()
+        sleep.assert_called_once()
+        self.assertGreaterEqual(sleep.call_args.args[0], 1.0)
 
 
 if __name__ == "__main__":

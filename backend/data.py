@@ -7,6 +7,7 @@ import os
 import re
 import time
 from datetime import date, datetime, timedelta, timezone
+from threading import Lock
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import urlopen
@@ -46,7 +47,7 @@ def demo_assets() -> list[dict]:
         news = [{"title": title, "source": source,
                  "url": f"https://example.com/tradebo-demo/{symbol.lower()}/{i}",
                  "published_at": (now - timedelta(hours=12 + 9 * i)).isoformat(),
-                 "tickers": [symbol], "sentiment": sentiment,
+                 "tickers": [symbol], "ticker_relevance_score": 1.0, "sentiment": sentiment,
                  "summary": "Fictional article for interface testing. No real event is implied."}
                 for i, (source, title, sentiment) in enumerate(headlines)]
         overview = {
@@ -72,15 +73,27 @@ def default_model(assets: list[dict]) -> dict:
                 "targets": {**{row[0]: row[7] for row in DEMO_SPEC}, "CASH": 20},
                 "policy": DEFAULT_POLICY.copy(), "label": "Illustrative portfolio"}
     symbols = [asset["symbol"] for asset in assets]
-    weight = 60.0 / len(symbols) if symbols else 0
+    weight = min(20.0, 60.0 / len(symbols)) if symbols else 0
     return {"cash": 100_000,
             "holdings": [{"symbol": symbol, "shares": 0, "cost_basis": None, "role": "Tactical"}
                          for symbol in symbols],
-            "targets": {**{symbol: weight for symbol in symbols}, "CASH": 40.0},
+            "targets": {**{symbol: weight for symbol in symbols}, "CASH": 100.0 - weight * len(symbols)},
             "policy": DEFAULT_POLICY.copy(), "label": "Unfunded example model"}
 
 
 _CACHE: dict[str, tuple[float, dict]] = {}
+_RATE_LOCK = Lock()
+_LAST_REQUEST_AT = float("-inf")
+
+
+def _wait_for_provider_slot() -> None:
+    """Serialize outbound calls within the free key's per-second burst limit."""
+    global _LAST_REQUEST_AT
+    with _RATE_LOCK:
+        delay = max(0.0, _LAST_REQUEST_AT + 1.25 - time.monotonic())
+        if delay:
+            time.sleep(delay)
+        _LAST_REQUEST_AT = time.monotonic()
 
 
 def _query(function: str, symbol: str, key: str, ttl: int) -> dict:
@@ -96,12 +109,17 @@ def _query(function: str, symbol: str, key: str, ttl: int) -> dict:
     # Alpha Vantage authenticates through the query string. Never log this URL.
     url = "https://www.alphavantage.co/query?" + urlencode(params)
     try:
+        _wait_for_provider_slot()
         with urlopen(url, timeout=15) as response:
             payload = json.load(response)
     except (HTTPError, URLError, TimeoutError, ValueError) as exc:
         raise RuntimeError("The market data provider is unavailable. Check the network, key, and quota.") from exc
-    if not isinstance(payload, dict) or any(k in payload for k in ("Note", "Information", "Error Message")):
-        raise RuntimeError("The market data provider rejected the request or exhausted its quota.")
+    if not isinstance(payload, dict):
+        raise RuntimeError("The market data provider returned an invalid response.")
+    if any(k in payload for k in ("Note", "Information")):
+        raise RuntimeError("The market data provider reached a rate, quota, or access limit. Wait and retry with fewer tickers.")
+    if "Error Message" in payload:
+        raise RuntimeError("The market data provider rejected this endpoint or ticker.")
     _CACHE[cache_key] = (time.time(), payload)
     return payload
 
@@ -138,7 +156,7 @@ def live_asset(symbol: str) -> dict:
         bars = [{"date": day, "close": float(row["4. close"])} for day, row in series.items()]
     except (ValueError, KeyError, TypeError) as exc:
         raise RuntimeError(f"{symbol} returned malformed daily price data.") from exc
-    feed = _query("NEWS_SENTIMENT", symbol, key, 3600).get("feed", [])
+    feed = _query("NEWS_SENTIMENT", symbol, key, 3600).get("feed", [])[:30]
     news = []
     for item in feed:
         try:
@@ -151,6 +169,7 @@ def live_asset(symbol: str) -> dict:
         news.append({"title": item.get("title", ""), "source": item.get("source", "Unknown"),
                      "url": item.get("url", ""), "published_at": published.isoformat(),
                      "tickers": [entry.get("ticker", "") for entry in ticker_data],
+                     "ticker_relevance_score": _optional_float(specific.get("relevance_score")),
                      "sentiment": "positive" if score >= .35 else "negative" if score <= -.35 else "neutral",
                      "summary": str(item.get("summary", ""))[:400]})
     raw = _query("OVERVIEW", symbol, key, 86400)
@@ -169,7 +188,7 @@ def live_asset(symbol: str) -> dict:
 
 def live_assets(symbols: list[str] | None = None) -> list[dict]:
     if symbols is None:
-        symbols = [s.strip() for s in os.environ.get("TRADEBOT_SYMBOLS", "AAPL,MSFT,NVDA").split(",") if s.strip()]
+        symbols = [s.strip() for s in os.environ.get("TRADEBOT_SYMBOLS", "AAPL").split(",") if s.strip()]
     normalized = list(dict.fromkeys(validate_symbol(s) for s in symbols))
     if not normalized or len(normalized) > 8:
         raise ValueError("Choose between 1 and 8 US equity tickers.")

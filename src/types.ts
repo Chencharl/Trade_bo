@@ -77,6 +77,8 @@ export type News = {
   sentiment: string
   age_hours: number
   relevance: number
+  headline_match: boolean
+  exclusion_reason: string | null
   relevant: boolean
 }
 
@@ -115,6 +117,8 @@ export type Analysis = {
   buy_gates: { id: string; label: string; passed: boolean; detail: string }[]
   sell_triggers: string[]
   relevant_article_count: number
+  screened_article_count: number
+  excluded_article_count: number
   independent_source_count: number
   position_shares: number
   position_value: number
