@@ -1,21 +1,46 @@
-"""Small local HTTP API. No broker credentials or real-money order endpoint."""
-
+"""Local research API and static server. No broker or live order endpoint exists."""
 from __future__ import annotations
 
+import hashlib
 import json
 import os
-from threading import Lock
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from threading import Lock
 from urllib.parse import parse_qs, urlsplit
 
-from .data import DEMO_PORTFOLIO, LIVE_PORTFOLIO, POLICY, demo_assets, live_assets
-from .engine import build_dashboard
+from .data import default_model, demo_assets, live_assets, validate_symbol
+from .engine import answer_question, build_dashboard
 
 ROOT = Path(__file__).resolve().parents[1]
 DIST = ROOT / "dist"
 PAPER_ORDERS: list[dict] = []
 PAPER_LOCK = Lock()
+
+
+def _assets(mode: str, symbols: list[str] | None = None) -> list[dict]:
+    if mode == "demo":
+        return demo_assets()
+    if mode == "live":
+        return live_assets(symbols)
+    raise ValueError("Mode must be demo or live.")
+
+
+def _fingerprint(model: dict) -> str:
+    packed = json.dumps(model, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(packed.encode()).hexdigest()[:16]
+
+
+def _board(mode: str, model: dict | None = None, symbols: list[str] | None = None) -> dict:
+    assets = _assets(mode, symbols)
+    model = model if model is not None else default_model(assets)
+    board = build_dashboard(assets, model)
+    fingerprint = _fingerprint(model)
+    with PAPER_LOCK:
+        board["paper_orders"] = [{**order, "matches_model": order["model_fingerprint"] == fingerprint}
+                                  for order in PAPER_ORDERS if order["mode"] == mode]
+    board["symbols"] = [asset["symbol"] for asset in assets]
+    return board
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -28,72 +53,101 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def _body(self) -> dict:
+        length = int(self.headers.get("Content-Length", "0"))
+        if not 1 <= length <= 65536:
+            raise ValueError("Request body must be between 1 and 65536 bytes.")
+        if self.headers.get("Content-Type", "").split(";", 1)[0] != "application/json":
+            raise ValueError("Content-Type must be application/json.")
+        body = json.loads(self.rfile.read(length))
+        if not isinstance(body, dict):
+            raise ValueError("Request body must be a JSON object.")
+        return body
+
     def do_GET(self) -> None:
-        parsed = urlsplit(self.path)
-        if parsed.path == "/api/dashboard":
-            mode = parse_qs(parsed.query).get("mode", ["demo"])[0]
+        path = urlsplit(self.path)
+        if path.path == "/api/dashboard":
             try:
-                if mode == "demo":
-                    result = build_dashboard(demo_assets(), DEMO_PORTFOLIO, POLICY)
-                elif mode == "live":
-                    result = build_dashboard(live_assets(), LIVE_PORTFOLIO, POLICY)
-                else:
-                    return self._json(400, {"error": "无效的数据模式。"})
-                with PAPER_LOCK:
-                    result["paper_orders"] = PAPER_ORDERS.copy()
-                return self._json(200, result)
-            except (RuntimeError, ValueError, KeyError, OSError) as exc:
-                return self._json(503, {"error": str(exc)})
-        if parsed.path == "/api/health":
+                mode = parse_qs(path.query).get("mode", ["demo"])[0]
+                return self._json(200, _board(mode))
+            except (ValueError, RuntimeError) as exc:
+                return self._json(400 if isinstance(exc, ValueError) else 503, {"error": str(exc)})
+        if path.path == "/api/health":
             return self._json(200, {"ok": True})
-        path = (DIST / parsed.path.lstrip("/")).resolve()
-        if parsed.path == "/" or not path.is_file():
-            path = DIST / "index.html"
-        if not path.is_relative_to(DIST) or not path.is_file():
+        file = (DIST / path.path.lstrip("/")).resolve()
+        if path.path == "/" or not file.is_file():
+            file = DIST / "index.html"
+        if not file.is_relative_to(DIST) or not file.is_file():
             return self.send_error(404)
-        mime = {".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".svg": "image/svg+xml"}.get(path.suffix, "application/octet-stream")
-        data = path.read_bytes()
+        mime = {".html": "text/html", ".js": "text/javascript", ".css": "text/css",
+                ".svg": "image/svg+xml"}.get(file.suffix, "application/octet-stream")
+        content = file.read_bytes()
         self.send_response(200)
         self.send_header("Content-Type", mime)
-        self.send_header("Content-Length", str(len(data)))
+        self.send_header("Content-Length", str(len(content)))
         self.end_headers()
-        self.wfile.write(data)
+        self.wfile.write(content)
 
     def do_POST(self) -> None:
-        if self.path != "/api/paper/orders":
-            return self._json(404, {"error": "未知接口。"})
         try:
-            length = int(self.headers.get("Content-Length", "0"))
-            if length < 1 or length > 4096:
-                return self._json(400, {"error": "请求大小无效。"})
-            body = json.loads(self.rfile.read(length))
-            mode, symbol, qty = body.get("mode"), body.get("symbol"), body.get("quantity")
-            if mode not in ("demo", "live") or type(qty) is not int or qty < 1:
-                return self._json(400, {"error": "订单参数无效。"})
-            board = build_dashboard(demo_assets() if mode == "demo" else live_assets(),
-                                    DEMO_PORTFOLIO if mode == "demo" else LIVE_PORTFOLIO, POLICY)
-            candidate = next((a for a in board["analyses"] if a["symbol"] == symbol), None)
-            if not candidate or candidate["action"] not in ("REVIEW_BUY", "REVIEW_SELL"):
-                return self._json(409, {"error": "当前没有可加入模拟计划的买卖候选。"})
-            side = "BUY" if candidate["action"] == "REVIEW_BUY" else "SELL"
-            with PAPER_LOCK:
-                planned = sum(o["quantity"] for o in PAPER_ORDERS if o["mode"] == mode and o["symbol"] == symbol and o["side"] == side)
-                allowed = candidate["suggested_max_shares"] if side == "BUY" else int(candidate["position_shares"])
-                if qty + planned > allowed:
-                    return self._json(409, {"error": "当前规则不允许该数量进入模拟计划，请刷新研究结果。"})
-                order = {"id": len(PAPER_ORDERS) + 1, "mode": mode, "symbol": symbol,
-                         "side": side, "quantity": qty, "reference_price": candidate["market"]["price"],
-                         "status": "PLANNED", "execution_checks": ["人工核验资讯原文与账户目标", "交易前刷新行情及仓位约束", "确认市场交易时段与限价", "检查费用与滑点"],
-                         "note": "仅为纸面计划；参考价不是限价、未提交券商，也未假设成交。"}
-                PAPER_ORDERS.append(order)
-            return self._json(201, order)
-        except (ValueError, TypeError, KeyError, RuntimeError, OSError) as exc:
+            body = self._body()
+            mode = body.get("mode", "demo")
+            symbols = body.get("symbols")
+            if symbols is not None and (not isinstance(symbols, list) or len(symbols) > 8
+                                        or any(not isinstance(s, str) for s in symbols)):
+                raise ValueError("symbols must be a list of up to 8 tickers.")
+            if self.path == "/api/dashboard":
+                return self._json(200, _board(mode, body.get("model"), symbols))
+            if self.path == "/api/ask":
+                board = _board(mode, body.get("model"), symbols)
+                symbol = validate_symbol(str(body.get("symbol", "")))
+                analysis = next((row for row in board["analyses"] if row["symbol"] == symbol), None)
+                if analysis is None:
+                    raise ValueError("Load the ticker into the research universe first.")
+                return self._json(200, answer_question(str(body.get("question", "")), analysis, board["portfolio"]))
+            if self.path == "/api/paper/orders":
+                board = _board(mode, body.get("model"), symbols)
+                symbol = validate_symbol(str(body.get("symbol", "")))
+                side = body.get("side")
+                quantity = body.get("quantity")
+                if side not in ("BUY", "SELL") or type(quantity) is not int or quantity < 1:
+                    raise ValueError("A paper order requires BUY or SELL and a positive whole-share quantity.")
+                analysis = next((row for row in board["analyses"] if row["symbol"] == symbol), None)
+                if analysis is None:
+                    raise ValueError("Ticker is not in the loaded universe.")
+                expected = "REVIEW_ADD" if side == "BUY" else "REVIEW_REDUCE"
+                ceiling = (analysis["suggested_max_add_shares"] if side == "BUY"
+                           else analysis["review_reduce_shares"])
+                if analysis["action"] != expected:
+                    return self._json(409, {"error": "Current research rules do not permit that paper plan."})
+                fingerprint = _fingerprint(board["portfolio"]["model"])
+                with PAPER_LOCK:
+                    planned = sum(order["quantity"] for order in PAPER_ORDERS
+                                  if order["model_fingerprint"] == fingerprint and order["mode"] == mode
+                                  and order["symbol"] == symbol and order["side"] == side)
+                    if quantity + planned > ceiling:
+                        return self._json(409, {"error": "Quantity exceeds the remaining paper-review ceiling."})
+                    order = {"id": len(PAPER_ORDERS) + 1, "mode": mode, "symbol": symbol,
+                             "side": side, "quantity": quantity, "reference_close": analysis["market"]["price"],
+                             "price_date": analysis["market"]["as_of"], "status": "DRAFT",
+                             "model_fingerprint": fingerprint,
+                             "execution_checks": ["Verify source documents and account suitability",
+                                                  "Refresh market data and portfolio constraints",
+                                                  "Choose an explicit limit price and expiry",
+                                                  "Review market session, fees, taxes, and slippage"],
+                             "note": "Draft only; no broker submission or assumed fill."}
+                    PAPER_ORDERS.append(order)
+                return self._json(201, order)
+            return self._json(404, {"error": "Unknown API route."})
+        except (ValueError, KeyError, TypeError, json.JSONDecodeError) as exc:
             return self._json(400, {"error": str(exc)})
+        except RuntimeError as exc:
+            return self._json(503, {"error": str(exc)})
 
 
 def main() -> None:
     port = int(os.environ.get("TRADEBOT_PORT", "8765"))
-    print(f"TradeBo API listening at http://localhost:{port}")
+    print(f"TradeBo listening at http://127.0.0.1:{port}", flush=True)
     ThreadingHTTPServer(("127.0.0.1", port), Handler).serve_forever()
 
 

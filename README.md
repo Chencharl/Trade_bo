@@ -1,29 +1,34 @@
-# TradeBo · 证据驱动的美股研究台
+# TradeBo
 
-TradeBo 是一个用于 GitHub 展示的可运行原型。它把**日线行情、资讯相关性、买卖条件、仓位预算和组合规划**放在同一条可追溯的决策链上。系统只生成“买入复核 / 卖出复核 / 保持观望”三类研究结果；模拟计划不会向券商提交订单，也不假设成交。
+**A portfolio-first research desk for US equities.** TradeBo connects a security file to an explicit portfolio model: holdings, roles, target weights, sector exposure, cash reserve, risk budget, and review conditions. Its output is a traceable **add review**, **reduce review**, **hold**, or **data hold**. A review is a prompt for human judgment, never a broker instruction.
 
-![TradeBo dashboard](docs/dashboard.jpg)
+![TradeBo portfolio review](docs/dashboard.jpg)
 
-## 运行
+## What you can inspect
 
-需要 Python 3.10+、Node.js 22.12+（或 20.19+）。无需数据库。
+- **Portfolio review:** live-calculated NAV and weights from entered cash, shares, and daily closes; sector and trading-role totals, target drift, concentration alerts, and a review queue.
+- **Security research:** price history, descriptive risk measures, company overview, recent ticker-tagged articles, portfolio context, and every passed or blocked rule.
+- **Research question:** direct, bounded answers about a selected ticker's add/reduce conditions, allocation, news, fundamentals, or observed risk. Each answer lists its evidence and states when the loaded data cannot answer a question.
+- **Paper plans:** draft quantities subject to the current rule ceiling, with no execution or assumed fill. Plans are marked for re-review when the portfolio model changes.
+- **Editable model:** cash, whole shares, cost basis, role, target weights, and risk limits. Targets including cash must sum to 100%.
+
+The default sample contains **six fictional companies** and entirely synthetic prices, fundamentals, and articles. Nothing in the sample depicts actual securities or market events.
+
+## Run locally
+
+Requirements: Python 3.10+ and Node.js 22.12+. No database is required.
 
 ```bash
-npm install
+npm ci
+npm run build
 python3 -m backend.server
 ```
 
-另开终端：
+Open `http://127.0.0.1:8765`. For frontend development, run `npm run dev` in a second terminal and open the Vite URL. The local API remains on port 8765.
 
-```bash
-npm run dev
-```
+## Optional market data
 
-浏览器打开 Vite 输出的本地地址（通常为 `http://127.0.0.1:5173`）。默认数据为**完全合成**的美股风格示例，公司、价格和资讯均不代表真实市场。生产式静态启动可运行 `npm run build`，然后打开 `http://127.0.0.1:8765`。
-
-## 接入真实美股数据
-
-服务端设置环境变量后，点击页面的“真实数据”。API 密钥不会进入前端代码或 Git：
+TradeBo can load US-listed equities through [Alpha Vantage](https://www.alphavantage.co/documentation/). Keep the API key in the **server environment**; it is never embedded in the frontend bundle.
 
 ```bash
 export ALPHA_VANTAGE_API_KEY="your_key_here"
@@ -31,44 +36,43 @@ export TRADEBOT_SYMBOLS="AAPL,MSFT,NVDA"
 python3 -m backend.server
 ```
 
-`TRADEBOT_SYMBOLS` 最多取前三个 1–5 位字母的代码，使用 [Alpha Vantage Symbol Search](https://www.alphavantage.co/documentation/) 核验 `United States / Equity` 后才加载。日线和资讯也来自 Alpha Vantage；其免费请求额度和接口权限可能变化，请查看[官方额度说明](https://www.alphavantage.co/support/)。每个标的首次加载最多用 3 次请求；标的核验缓存 24 小时，日线缓存 6 小时，资讯缓存 1 小时。额度不足、接口报错、价格过期、资讯不足都会产生可见提示或观望结论，不会回退成伪装的真实数据。真实数据模式仍使用**示例的 10 万美元空仓组合**，用户应在加入实际持仓输入前把它视作假设。
+Choose **Provider** in the interface. Symbol Search must identify each ticker as `United States / Equity`. The server then requests daily closes, ticker news, and a company overview. The loaded universe is limited to eight symbols. Provider errors and quota limits are surfaced to the user; the interface does not present sample data as provider data. The initial provider-mode portfolio is an explicitly labeled, empty **example model** with $100,000 cash. Enter and verify your own account inputs before interpreting its allocation context. The model stays in the browser session and is sent to the local server for recalculation; it is not persisted.
 
-## 决策规则
+Provider daily closes are **unadjusted** in this release. Corporate actions, delayed or incomplete feeds, and provider sentiment errors can distort signals. The article filter requires an explicit ticker tag, a timestamp within 72 hours, and a unique URL/headline. Two named sources are only a screening condition; they do not prove independent reporting or verify the article's claims.
 
-| 层级 | 买入复核条件                                                              | 未满足时        |
-| ---- | ------------------------------------------------------------------------- | --------------- |
-| 数据 | 最近日线不超过 5 天，至少 50 个收盘价                                     | 观望 / 数据错误 |
-| 趋势 | 收盘价 > 20 日均线 > 50 日均线                                            | 观望            |
-| 资讯 | 72 小时内明确标记该股票代码；至少两个不同来源、两条正向标签、没有负向标签 | 观望            |
-| 风险 | 有可买入股数；单标的 ≤ 12% NAV，现金 ≥ 20% NAV，计划风险 ≤ 1% NAV         | 观望            |
+## Decision protocol
 
-卖出复核只针对已有持仓：收盘价跌破 20 日均线且 20 日均线低于 50 日均线，或该持仓超过 12% NAV。数据过期时，买卖候选都被阻断。买卖候选均需人工读原文和确认实际账户条件。`planning_stop_pct=8%` 仅用于计算计划股数；止损触发价不保证成交价，[FINRA 对止损单的说明](https://www.finra.org/investors/insights/stop-orders-factors-consider-during-volatile-markets)解释了跳空与成交价风险。
+| Role      | Add review                                                                                                                                                                                                 | Reduce review                                                 |
+| --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| Core      | Price at or above its 50-day average, no negative recent ticker-tagged article, and available portfolio headroom.                                                                                          | Target-band, position-cap, or sector-cap breach.              |
+| Tactical  | Price above its 20-day average above its 50-day average; two positive recent ticker-tagged articles from distinct named sources; no negative article; staged size limited to one third of target headroom. | Target-band, position-cap, sector-cap, or observed downtrend. |
+| Defensive | Price at or above its 50-day average, no negative recent article, non-negative reported profit margin, and available headroom.                                                                             | Target-band, position-cap, or sector-cap breach.              |
 
-资讯的“正向/负向”是提供方的标签，不是事实核验或独立预测。相关性评分只检查明确的股票代码标签、72 小时时间窗和重复 URL；缺少公司代码标签的文章不会被推断为相关。两家来源只构成初步交叉检查，**不代表来源独立性已得到充分验证**。
+Every add also requires a known sector, a latest daily close no older than five calendar days, target headroom, the cash reserve, and the single-name/sector/risk-budget limits. The default illustrative limits are 22% per security, 32% per sector, 12% minimum cash, 1% of NAV planned risk per trade, an 8% planning stop distance, and a 4 percentage point drift review band. These are editable **model assumptions**, not universal allocations or a personalized recommendation. The planning stop is a sizing input and cannot guarantee an exit price. A stale or future-dated price pauses both add and reduce reviews.
 
-## 项目结构
+Portfolio construction begins with the investor's objectives, horizon, and tolerance for loss. The app cannot infer those from a ticker or price series. Read the [research protocol](docs/RESEARCH_PROTOCOL.md) for formulas, evidence limits, and the open-source projects that informed this design.
 
-```text
-backend/engine.py   可复现的相关性、趋势、仓位与决策规则
-backend/data.py     合成样例与可选 Alpha Vantage 适配器
-backend/server.py   本地 JSON API、静态文件与纸面计划
-src/                React + TypeScript 展示界面
-tests/              关键阻断条件测试
-```
-
-运行测试：
+## Verification
 
 ```bash
-python3 -m unittest discover -s tests -v
+npm run format:check
 npm run build
+python3 -m unittest discover -s tests -v
 ```
 
-## 安全边界与下一步
+The tests cover NAV and weight arithmetic, target validation, stale prices, duplicate and unrelated news, cash reserve, sector classification, distinct review outcomes, bounded answers, and US listing checks.
 
-- 当前仅研究美股股票；无券商连接、真实下单、收益承诺、回测或自动再平衡。
-- 模拟计划只保存在服务内存中，服务重启即消失，且没有模拟成交引擎。
-- 当前真实接口使用未复权日线；拆股/派息跨越均线窗口时，需要改接复权数据并加入公司行动校验后才可用于严肃评估。
-- 下一阶段应加入可编辑账户目标与持仓、数据许可与来源审计、时间点回测（含交易费用和滑点）、事件去重、券商模拟账户适配，并对资讯模型做误报评估。
-- 资产配置应依据个人目标、投资期限与风险承受能力设定。[FINRA 的投资者材料](https://www.finra.org/investors/insights/know-your-risk-tolerance)提供了这些维度的说明。
+## Project map
 
-这不是个性化投资建议。任何实盘决策都应核验数据和个人适配性。
+```text
+backend/data.py       Synthetic fixtures and optional provider adapter
+backend/engine.py     Portfolio math, relevance filter, rules, answers
+backend/server.py     Local JSON API and in-memory draft register
+src/                  React + TypeScript interface
+tests/                Decision-contract tests
+docs/                 Protocol and screenshots
+```
+
+## Scope
+
+This is a local research prototype. It has no broker connection, live order placement, tax-lot model, transaction-cost backtest, adjusted-price engine, or automated rebalancing. Paper drafts vanish when the server restarts. Historical volatility and drawdown describe the available series; they are not forecasts or loss bounds. Verify original articles, issuer filings, data timestamps, and account suitability before using any output in a real decision.
