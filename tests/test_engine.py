@@ -1,70 +1,110 @@
+"""Decision-contract tests for the illustrative US-equity research desk."""
 from copy import deepcopy
 from datetime import datetime, timedelta, timezone
 import unittest
 from unittest.mock import patch
 
-from backend.data import DEMO_PORTFOLIO, POLICY, demo_assets, live_assets
-from backend.engine import analyze_asset, score_news
+from backend.data import default_model, demo_assets, live_assets, validate_symbol
+from backend.engine import analyze_asset, answer_question, build_dashboard, build_portfolio, score_news
 
 
 class DecisionTests(unittest.TestCase):
     def setUp(self):
         self.assets = demo_assets()
+        self.model = default_model(self.assets)
         self.now = datetime.now(timezone.utc)
 
-    def test_three_distinct_outcomes(self):
-        outcomes = [analyze_asset(a, DEMO_PORTFOLIO, POLICY, self.now)["action"] for a in self.assets]
-        self.assertEqual(outcomes, ["REVIEW_BUY", "REVIEW_SELL", "WAIT"])
+    def board(self):
+        return build_dashboard(self.assets, self.model, self.now)
 
-    def test_stale_market_blocks_even_sell(self):
-        asset = deepcopy(self.assets[1])
-        for bar in asset["bars"]:
-            bar["date"] = (datetime.fromisoformat(bar["date"]) - timedelta(days=8)).date().isoformat()
-        self.assertEqual(analyze_asset(asset, DEMO_PORTFOLIO, POLICY, self.now)["action"], "WAIT")
+    def test_demo_has_distinct_add_reduce_and_hold_outcomes(self):
+        actions = {row["symbol"]: row["action"] for row in self.board()["analyses"]}
+        self.assertEqual(actions["ORBT"], "REVIEW_ADD")
+        self.assertEqual(actions["COVE"], "REVIEW_REDUCE")
+        self.assertEqual(actions["NOVA"], "HOLD")
 
-    def test_duplicate_article_cannot_supply_second_source(self):
+    def test_weights_derive_from_cash_shares_and_prices(self):
+        portfolio = self.board()["portfolio"]
+        values = sum(row["value"] for row in portfolio["positions"])
+        self.assertAlmostEqual(portfolio["nav"], self.model["cash"] + values, places=2)
+        self.assertAlmostEqual(portfolio["cash_weight_pct"] + sum(row["weight_pct"] for row in portfolio["positions"]), 100, delta=.05)
+        self.assertGreater(portfolio["sectors"][0]["weight_pct"], 0)
+        self.assertAlmostEqual(sum(row["target_pct"] for row in portfolio["roles"]) + portfolio["cash_target_pct"], 100)
+        self.assertAlmostEqual(sum(row["weight_pct"] for row in portfolio["roles"]) + portfolio["cash_weight_pct"], 100, delta=.05)
+
+    def test_target_and_share_validation(self):
+        model = deepcopy(self.model)
+        model["targets"]["CASH"] += 1
+        with self.assertRaisesRegex(ValueError, "sum to 100"):
+            build_portfolio(self.assets, model)
+        model = deepcopy(self.model)
+        model["holdings"][0]["shares"] = 1.5
+        with self.assertRaisesRegex(ValueError, "whole number"):
+            build_portfolio(self.assets, model)
+
+    def test_unheld_target_is_in_sector_plan(self):
+        model = deepcopy(self.model)
+        model["holdings"] = [h for h in model["holdings"] if h["symbol"] != "ORBT"]
+        portfolio = build_portfolio(self.assets, model)
+        technology = next(s for s in portfolio["sectors"] if s["sector"] == "Technology")
+        self.assertEqual(technology["weight_pct"], 0)
+        self.assertEqual(technology["target_pct"], 18)
+
+    def test_stale_price_blocks_both_trade_reviews(self):
+        for symbol in ("ORBT", "COVE"):
+            asset = deepcopy(next(a for a in self.assets if a["symbol"] == symbol))
+            for bar in asset["bars"]:
+                bar["date"] = (datetime.fromisoformat(bar["date"]) - timedelta(days=8)).date().isoformat()
+            portfolio = build_portfolio(self.assets, self.model)
+            self.assertEqual(analyze_asset(asset, portfolio, self.now)["action"], "DATA_HOLD")
+
+    def test_duplicate_or_unrelated_news_cannot_satisfy_tactical_entry(self):
         asset = deepcopy(self.assets[0])
         asset["news"][1]["url"] = asset["news"][0]["url"] + "?tracking=1"
-        result = analyze_asset(asset, DEMO_PORTFOLIO, POLICY, self.now)
-        self.assertEqual(result["action"], "WAIT")
-        self.assertFalse(next(g for g in result["gates"] if g["id"] == "news")["passed"])
-
-    def test_unrelated_article_excluded(self):
+        result = analyze_asset(asset, self.board()["portfolio"], self.now)
+        self.assertEqual(result["action"], "HOLD")
+        self.assertFalse(next(g for g in result["buy_gates"] if g["id"] == "news")["passed"])
         news = deepcopy(self.assets[0]["news"])
         news[1]["tickers"] = ["OTHER"]
-        result = score_news(news, "ORBT", self.now)
-        self.assertEqual(sum(n["relevant"] for n in result), 1)
+        self.assertEqual(sum(n["relevant"] for n in score_news(news, "ORBT", self.now)), 1)
 
-    def test_syndicated_headline_does_not_count_twice(self):
+    def test_cash_reserve_blocks_add_and_policy_breach_triggers_reduce(self):
+        model = deepcopy(self.model)
+        model["cash"] = 0
+        board = build_dashboard(self.assets, model, self.now)
+        self.assertEqual(next(a for a in board["analyses"] if a["symbol"] == "ORBT")["action"], "HOLD")
+        cove = next(a for a in board["analyses"] if a["symbol"] == "COVE")
+        self.assertEqual(cove["action"], "REVIEW_REDUCE")
+        self.assertGreater(cove["review_reduce_shares"], 0)
+
+    def test_unclassified_sector_blocks_add(self):
         asset = deepcopy(self.assets[0])
-        asset["news"][1]["title"] = asset["news"][0]["title"]
-        self.assertEqual(analyze_asset(asset, DEMO_PORTFOLIO, POLICY, self.now)["action"], "WAIT")
+        asset["sector"] = "Unclassified"
+        result = analyze_asset(asset, self.board()["portfolio"], self.now)
+        self.assertEqual(result["action"], "HOLD")
+        self.assertFalse(next(g for g in result["buy_gates"] if g["id"] == "classification")["passed"])
 
-    def test_sell_trace_identifies_actual_trigger(self):
-        result = analyze_asset(self.assets[1], DEMO_PORTFOLIO, POLICY, self.now)
-        self.assertEqual(result["action"], "REVIEW_SELL")
-        self.assertTrue(next(g for g in result["sell_gates"] if g["id"] == "downtrend")["passed"])
-        self.assertFalse(next(g for g in result["sell_gates"] if g["id"] == "concentration")["passed"])
+    def test_question_answers_are_bounded_and_cite_evidence(self):
+        board = self.board()
+        orbt = next(a for a in board["analyses"] if a["symbol"] == "ORBT")
+        answer = answer_question("Can we add to ORBT?", orbt, board["portfolio"])
+        self.assertEqual(answer["intent"], "add")
+        self.assertIn("[M1] [P1]", answer["answer"])
+        allocation = answer_question("How does ORBT fit our portfolio?", orbt, board["portfolio"])
+        self.assertEqual(allocation["intent"], "allocation")
+        self.assertIn("Tactical sleeve", allocation["answer"])
+        unknown = answer_question("What will ORBT return next year?", orbt, board["portfolio"])
+        self.assertEqual(unknown["intent"], "unsupported")
+        self.assertIn("cannot forecast", unknown["answer"])
 
-    def test_position_cap_reduces_size(self):
-        portfolio = deepcopy(DEMO_PORTFOLIO)
-        portfolio["positions"]["ORBT"] = 130
-        result = analyze_asset(self.assets[0], portfolio, POLICY, self.now)
-        self.assertLess(result["suggested_max_shares"], 20)
-
-    def test_no_cash_blocks_buy(self):
-        portfolio = deepcopy(DEMO_PORTFOLIO)
-        portfolio["cash"] = 19000
-        result = analyze_asset(self.assets[0], portfolio, POLICY, self.now)
-        self.assertEqual(result["action"], "WAIT")
-
-    def test_live_adapter_rejects_non_us_listing(self):
+    def test_provider_rejects_non_us_listing(self):
+        self.assertEqual(validate_symbol("brk.b"), "BRK.B")
         response = {"bestMatches": [{"1. symbol": "AAPL", "2. name": "Apple",
                                      "3. type": "Equity", "4. region": "United Kingdom"}]}
-        with patch.dict("os.environ", {"ALPHA_VANTAGE_API_KEY": "test-key", "TRADEBOT_SYMBOLS": "AAPL"}), \
+        with patch.dict("os.environ", {"ALPHA_VANTAGE_API_KEY": "test-key"}), \
              patch("backend.data._query", return_value=response):
-            with self.assertRaisesRegex(RuntimeError, "美股交易所区域核验"):
-                live_assets()
+            with self.assertRaisesRegex(RuntimeError, "US-listed equity"):
+                live_assets(["AAPL"])
 
 
 if __name__ == "__main__":
