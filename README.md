@@ -11,6 +11,8 @@ A portfolio wind tunnel. Build a mix, change the conditions, and explore a thous
 ![No API key](https://img.shields.io/badge/API_key-not_required-588b84)
 [![License: MIT](https://img.shields.io/badge/license-MIT-7080a3)](LICENSE)
 
+[**Open the live playground →**](https://chencharl.github.io/Trade_bo/)
+
 [Explore the model](docs/ATLAS_MODEL.md) · [Run locally](#run-it-locally) · [Deploy to Pages](#put-it-on-github-pages) · [Research desk](docs/RESEARCH_DESK.md)
 
 ![TradeBo Atlas interactive portfolio simulation](docs/atlas-preview.png)
@@ -113,7 +115,9 @@ Checks include deterministic cash growth, covariance arithmetic, Monte Carlo mea
 
 ## Put it on GitHub Pages
 
-The included [Pages workflow](.github/workflows/pages.yml) builds and verifies the static frontend. Relative asset paths also support repository subpaths and forks.
+The [public demo](https://chencharl.github.io/Trade_bo/) is published from `codex/atlas-pages`; its `build-info.json` records the source commit. The source implementation is available in [PR #3](https://github.com/Chencharl/Trade_bo/pull/3).
+
+For deployment from your main source branch, the included [Pages workflow](.github/workflows/pages.yml) builds and verifies the static frontend. Relative asset paths also support repository subpaths and forks.
 
 1. In **Settings → Pages**, choose **GitHub Actions** as the source.
 2. After merging the project onto `main`, run **Deploy Atlas to Pages** from the Actions tab. This workflow deploys on demand.
