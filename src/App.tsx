@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import './styles.css'
 import { ArrowRight, ExternalLink, RefreshCw, Search, Settings2, X } from 'lucide-react'
 import type { Action, Analysis, Answer, Board, Mode, Model, Page, PaperOrder, Role } from './types'
 
@@ -501,6 +502,9 @@ function App() {
             </div>
           </div>
           <div className="header-meta">
+            <a href="#" style={{ color: '#c5d7ed' }}>
+              ← Atlas playground
+            </a>
             <span>LOCAL RESEARCH ENVIRONMENT</span>
             <span className="meta-separator" />{' '}
             <span>
