@@ -1927,3 +1927,19 @@ body {
     scroll-behavior: auto !important;
   }
 }
+
+.atlas-metrics > div {
+  container-type: inline-size;
+}
+.atlas-metrics strong.atlas-metric-money {
+  font-size: clamp(15px, 18cqi, 31px);
+}
+@media (max-width: 620px) {
+  .atlas-capital-wide,
+  .atlas-capital-wide + .atlas-mix-tabs {
+    grid-column: 1 / -1;
+  }
+  .atlas-capital-wide + .atlas-mix-tabs {
+    margin-top: 12px;
+  }
+}

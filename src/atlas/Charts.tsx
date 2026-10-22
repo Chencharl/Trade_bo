@@ -8,7 +8,13 @@ export const money = (value: number) =>
     maximumFractionDigits: 0,
   }).format(value)
 export const compact = (value: number) =>
-  value >= 1000000 ? `$${(value / 1000000).toFixed(1)}m` : `$${Math.round(value / 1000)}k`
+  value >= 1000000
+    ? `$${(value / 1000000).toFixed(1)}m`
+    : value >= 10000
+      ? `$${Math.round(value / 1000)}k`
+      : value >= 1000
+        ? `$${(value / 1000).toFixed(1)}k`
+        : money(value)
 export const percent = (value: number, signed = false) =>
   `${signed && value > 0 ? '+' : ''}${value.toFixed(1)}%`
 
@@ -181,7 +187,7 @@ export function PossibilityField({
           </g>
         )}
         {(last.p90 - last.p10 < top * 0.015
-          ? ([['p50', 'All percentiles']] as const)
+          ? ([['p50', last.p90 === last.p10 ? 'All percentiles' : 'Median']] as const)
           : ([
               ['p90', '90th'],
               ['p50', 'Median'],

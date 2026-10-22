@@ -6,6 +6,8 @@
 
 A portfolio wind tunnel. Build a mix, change the conditions, and explore a thousand simulated futures.
 
+A personal project by [Chen Yang](https://github.com/Chencharl).
+
 [![CI](https://github.com/Chencharl/Trade_bo/actions/workflows/ci.yml/badge.svg)](https://github.com/Chencharl/Trade_bo/actions/workflows/ci.yml)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.9-4569bb)
 ![No API key](https://img.shields.io/badge/API_key-not_required-588b84)
@@ -13,7 +15,7 @@ A portfolio wind tunnel. Build a mix, change the conditions, and explore a thous
 
 [**Open the live playground →**](https://chencharl.github.io/Trade_bo/)
 
-[Explore the model](docs/ATLAS_MODEL.md) · [Run locally](#run-it-locally) · [Deploy to Pages](#put-it-on-github-pages) · [Research desk](docs/RESEARCH_DESK.md)
+[Explore the model](docs/ATLAS_MODEL.md) · [Run locally](#run-it-locally) · [Contribute](CONTRIBUTING.md) · [Research desk](docs/RESEARCH_DESK.md)
 
 ![TradeBo Atlas interactive portfolio simulation](docs/atlas-preview.png)
 
@@ -22,6 +24,8 @@ A portfolio wind tunnel. Build a mix, change the conditions, and explore a thous
 Most portfolio dashboards tell you what happened. Atlas lets you play with **what could happen under a set of assumptions**. Drag an allocation slider, trigger a market shock, and watch a field of possible outcomes take shape. Pin a setup and compare it with another using the same random draws.
 
 The whole playground runs in your browser. No account, market-data subscription, API key, or backend is needed.
+
+**Start here:** [open Atlas](https://chencharl.github.io/Trade_bo/) on your phone or computer. Choose a portfolio, change the conditions, and share the resulting experiment link. Nothing needs to be installed.
 
 ## Take a 60-second tour
 
@@ -106,25 +110,26 @@ The portfolio is approximated by geometric Brownian motion with a constant alloc
 npm test                                      # Analytic and invariant tests
 npm run format:check
 npm run build
-npx playwright install chromium               # Once per environment
+npx playwright install chromium firefox webkit # Once per environment
 npm run test:e2e                               # Real-browser interaction tests
 python3 -m unittest discover -s tests -v       # Existing research contracts
 ```
 
-Checks include deterministic cash growth, covariance arithmetic, Monte Carlo mean agreement, month-six shock timing, constant allocation totals, URL validation, export consistency, keyboard controls, mobile layout, and preservation of the research engine’s contracts. CI runs the same checks.
+Checks include deterministic cash growth, covariance arithmetic, Monte Carlo mean agreement, month-six shock timing, constant allocation totals, URL validation, export consistency, keyboard controls, mobile layout, and preservation of the research engine’s contracts. CI runs the browser journeys in Chromium, Firefox, and WebKit. These engine checks do not replace testing on every physical device.
 
 ## Put it on GitHub Pages
 
-The [public demo](https://chencharl.github.io/Trade_bo/) is published from `codex/atlas-pages`; its `build-info.json` records the source commit. The source implementation is available in [PR #3](https://github.com/Chencharl/Trade_bo/pull/3).
+The [public app](https://chencharl.github.io/Trade_bo/) is built from `main` by the [Pages workflow](.github/workflows/pages.yml). Every push to `main` runs formatting, numeric and Python tests, a production build, and browser journeys before deployment. A failed check stops publication.
 
-For deployment from your main source branch, the included [Pages workflow](.github/workflows/pages.yml) builds and verifies the static frontend. Relative asset paths also support repository subpaths and forks.
+The deployed [build information](https://chencharl.github.io/Trade_bo/build-info.json) records the exact source commit, model version, and build time. Experiment links separately carry the simulation model version and inputs.
+
+To publish your own fork:
 
 1. In **Settings → Pages**, choose **GitHub Actions** as the source.
-2. After merging the project onto `main`, run **Deploy Atlas to Pages** from the Actions tab. This workflow deploys on demand.
-3. Open the deployment URL shown by GitHub. For this repository, the expected URL is `https://chencharl.github.io/Trade_bo/`.
-4. Add that verified URL to the repository’s About section and pin the repository on your GitHub profile.
+2. Push to `main`, or run **Deploy Atlas to Pages** from the Actions tab with `main` selected.
+3. Open the deployment URL shown by GitHub and update the project links to your fork.
 
-The workflow uses GitHub’s [official Pages deployment actions](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages). The Python research API stays local; Atlas is entirely static.
+Relative asset paths support repository subpaths. The workflow uses GitHub’s [official Pages deployment actions](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages). The Python research API stays local; Atlas is entirely static.
 
 ## Project map
 

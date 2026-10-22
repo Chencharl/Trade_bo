@@ -49,7 +49,7 @@ function ResearchEntry() {
         </p>
         <a
           className="atlas-button"
-          href="https://github.com/Chencharl/Trade_bo/blob/codex/atlas-lab/docs/RESEARCH_DESK.md"
+          href="https://github.com/Chencharl/Trade_bo/blob/main/docs/RESEARCH_DESK.md"
           target="_blank"
           rel="noreferrer"
         >
@@ -67,7 +67,14 @@ function Root() {
     window.addEventListener('hashchange', navigate)
     return () => window.removeEventListener('hashchange', navigate)
   }, [])
-  return research ? <ResearchEntry /> : <Atlas />
+  return (
+    <>
+      <div hidden={research}>
+        <Atlas />
+      </div>
+      {research && <ResearchEntry />}
+    </>
+  )
 }
 
 ReactDOM.createRoot(document.getElementById('root')!).render(

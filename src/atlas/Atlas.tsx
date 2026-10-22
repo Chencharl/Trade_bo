@@ -30,6 +30,7 @@ import {
   decodeExperiment,
   encodeExperiment,
   rebalance,
+  simulate,
 } from './engine'
 import type { Config, Setup, Simulation } from './engine'
 import { Distribution, money, percent, PossibilityField } from './Charts'
@@ -59,7 +60,9 @@ function downloadText(filename: string, content: string, type: string) {
   const anchor = document.createElement('a')
   anchor.href = url
   anchor.download = filename
+  document.body.appendChild(anchor)
   anchor.click()
+  anchor.remove()
   setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
 
@@ -83,6 +86,7 @@ export default function Atlas() {
   const [capitalError, setCapitalError] = useState('')
   const [details, setDetails] = useState(false)
   const worker = useRef<Worker | null>(null)
+  const [workerUnavailable, setWorkerUnavailable] = useState(false)
   const requestId = useRef(0)
   const methodRef = useRef<HTMLElement>(null)
   const scenario = SCENARIOS.find((row) => row.id === config.scenario)!
@@ -90,9 +94,15 @@ export default function Atlas() {
     MIXES.find((row) => row.weights.every((w, i) => w === config.weights[i]))?.name || 'Custom'
 
   useEffect(() => {
-    const instance = new Worker(new URL('./simulation.worker.ts', import.meta.url), {
-      type: 'module',
-    })
+    let instance: Worker
+    try {
+      instance = new Worker(new URL('./simulation.worker.ts', import.meta.url), {
+        type: 'module',
+      })
+    } catch {
+      setWorkerUnavailable(true)
+      return
+    }
     worker.current = instance
     instance.onmessage = (event) => {
       if (event.data.id !== requestId.current) return
@@ -106,7 +116,9 @@ export default function Atlas() {
       setCompletedKey(event.data.key)
     }
     instance.onerror = () => {
-      setError('The simulation could not start. Reload the page to try again.')
+      instance.terminate()
+      worker.current = null
+      setWorkerUnavailable(true)
     }
     return () => {
       instance.terminate()
@@ -116,8 +128,36 @@ export default function Atlas() {
 
   useEffect(() => {
     setError('')
-    worker.current?.postMessage({ id: ++requestId.current, key: runKey, config, pinned })
-  }, [config, pinned, runKey])
+    const id = ++requestId.current
+    if (worker.current && !workerUnavailable) {
+      try {
+        worker.current.postMessage({ id, key: runKey, config, pinned })
+        return
+      } catch {
+        worker.current.terminate()
+        worker.current = null
+        setWorkerUnavailable(true)
+      }
+    }
+    // The same deterministic model remains usable when browser workers are blocked.
+    const timer = window.setTimeout(() => {
+      try {
+        const next = simulate(config)
+        const pinnedResult = pinned ? simulate({ ...config, ...pinned }) : null
+        if (id !== requestId.current) return
+        setResult(next)
+        setComparison(pinnedResult)
+        setCompletedKey(runKey)
+      } catch {
+        setError('The simulation could not finish. Reset the experiment to try again.')
+      }
+    }, 0)
+    return () => window.clearTimeout(timer)
+  }, [config, pinned, runKey, workerUnavailable])
+
+  useEffect(() => {
+    setShareFallback('')
+  }, [config, pinned])
 
   useEffect(() => {
     const restore = () => {
@@ -133,6 +173,9 @@ export default function Atlas() {
         setConfig(next.config)
         setPinned(next.pinned)
         setCapitalText(String(next.config.capital))
+        setCapitalError('')
+        setShareFallback('')
+        if (decoded) setNotice('Shared experiment loaded.')
       }
     }
     window.addEventListener('hashchange', restore)
@@ -190,7 +233,7 @@ export default function Atlas() {
           pinned: pinned ? { inputs: { ...config, ...pinned }, results: comparison } : null,
           limitations:
             'Educational, uncalibrated portfolio GBM. Nominal USD. Constant mix; no fees, taxes, inflation adjustment, flows, fat tails, or default model. Not a forecast or investment recommendation.',
-          methods: `${REPO}/blob/codex/atlas-lab/docs/ATLAS_MODEL.md`,
+          methods: `${REPO}/blob/main/docs/ATLAS_MODEL.md`,
         },
         null,
         2,
@@ -201,25 +244,24 @@ export default function Atlas() {
   }
   function exportCard() {
     if (!result || busy || capitalError) return
+    const ceiling = Math.max(...result.bands.map((band) => band.p90))
     const points = result.bands
       .map(
-        (b, i) =>
-          `${80 + (i / (result.bands.length - 1)) * 880},${470 - (b.p50 / result.p90) * 235}`,
+        (b, i) => `${80 + (i / (result.bands.length - 1)) * 880},${470 - (b.p50 / ceiling) * 235}`,
       )
       .join(' ')
     const envelope = [
       ...result.bands.map(
-        (b, i) =>
-          `${80 + (i / (result.bands.length - 1)) * 880},${470 - (b.p90 / result.p90) * 235}`,
+        (b, i) => `${80 + (i / (result.bands.length - 1)) * 880},${470 - (b.p90 / ceiling) * 235}`,
       ),
       ...result.bands
         .map(
           (b, i) =>
-            `${80 + (i / (result.bands.length - 1)) * 880},${470 - (b.p10 / result.p90) * 235}`,
+            `${80 + (i / (result.bands.length - 1)) * 880},${470 - (b.p10 / ceiling) * 235}`,
         )
         .reverse(),
     ].join(' ')
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720"><rect width="1200" height="720" fill="#14233c"/><g font-family="Arial,sans-serif"><text x="80" y="78" font-size="22" fill="#a3b8f5" letter-spacing="5">TRADEBO / ATLAS</text><text x="80" y="144" font-size="48" fill="#fff">Same portfolio. Different possibilities.</text><text x="80" y="184" font-size="20" fill="#acbad3">${mix} mix · ${scenario.name} · ${config.years} years · ${config.intensity}% shock intensity</text><polygon points="${envelope}" fill="#607eed" opacity=".28"/><polyline points="${points}" fill="none" stroke="#b1caff" stroke-width="4"/><text x="80" y="528" font-size="16" fill="#acbad3">STARTING VALUE</text><text x="80" y="575" font-size="36" fill="#fff">${money(config.capital)}</text><text x="445" y="528" font-size="16" fill="#acbad3">SIMULATED MEDIAN</text><text x="445" y="575" font-size="36" fill="#fff">${money(result.median)}</text><text x="840" y="528" font-size="16" fill="#acbad3">10TH PERCENTILE</text><text x="840" y="575" font-size="36" fill="#fff">${money(result.p10)}</text><text x="80" y="639" font-size="16" fill="#acbad3">Illustrative assumptions · 1,000 paths · seed ${config.seed} · ${MODEL_VERSION} · not a forecast</text><text x="80" y="669" font-size="14" fill="#acbad3">Mix: ${config.weights.join(' / ')}% (US / international / Treasuries / gold / cash). No fees or taxes.</text></g></svg>`
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720"><rect width="1200" height="720" fill="#14233c"/><g font-family="Arial,sans-serif"><text x="80" y="78" font-size="22" fill="#a3b8f5" letter-spacing="5">TRADEBO / ATLAS</text><text x="80" y="144" font-size="48" fill="#fff">Same portfolio. Different possibilities.</text><text x="80" y="184" font-size="20" fill="#acbad3">${mix} mix · ${scenario.name} · ${config.years} years · ${config.intensity}% shock intensity</text><defs><clipPath id="plot"><rect x="80" y="235" width="880" height="235"/></clipPath></defs><g clip-path="url(#plot)"><polygon points="${envelope}" fill="#607eed" opacity=".28"/><polyline points="${points}" fill="none" stroke="#b1caff" stroke-width="4"/></g><text x="80" y="528" font-size="16" fill="#acbad3">STARTING VALUE</text><text x="80" y="575" font-size="36" fill="#fff">${money(config.capital)}</text><text x="445" y="528" font-size="16" fill="#acbad3">SIMULATED MEDIAN</text><text x="445" y="575" font-size="36" fill="#fff">${money(result.median)}</text><text x="840" y="528" font-size="16" fill="#acbad3">10TH PERCENTILE</text><text x="840" y="575" font-size="36" fill="#fff">${money(result.p10)}</text><text x="80" y="639" font-size="16" fill="#acbad3">Illustrative assumptions · 1,000 paths · seed ${config.seed} · ${MODEL_VERSION} · not a forecast</text><text x="80" y="669" font-size="14" fill="#acbad3">Mix: ${config.weights.join(' / ')}% (US / international / Treasuries / gold / cash). No fees or taxes.</text></g></svg>`
     downloadText('tradebo-atlas-card.svg', svg, 'image/svg+xml')
     setNotice('Share card downloaded as an editable SVG.')
   }
@@ -260,12 +302,7 @@ export default function Atlas() {
             Research desk <ArrowUpRight size={13} />
           </a>
         </nav>
-        <a
-          className="atlas-github"
-          href={`${REPO}/tree/codex/atlas-lab`}
-          target="_blank"
-          rel="noreferrer"
-        >
+        <a className="atlas-github" href={`${REPO}`} target="_blank" rel="noreferrer">
           <Github size={17} />
           <span>View source</span>
           <ArrowUpRight size={14} />
@@ -343,7 +380,7 @@ export default function Atlas() {
               <span className="atlas-small-tag">{mix}</span>
             </div>
             <form
-              className="atlas-capital"
+              className={`atlas-capital ${capitalText.length > 7 ? 'atlas-capital-wide' : ''}`}
               onSubmit={(event) => {
                 event.preventDefault()
                 applyCapital()
@@ -493,12 +530,14 @@ export default function Atlas() {
             <div className="atlas-metrics" aria-busy={busy}>
               <div>
                 <span>Simulated median</span>
-                <strong data-testid="median-value">{result ? money(result.median) : '—'}</strong>
+                <strong className="atlas-metric-money" data-testid="median-value">
+                  {result ? money(result.median) : '—'}
+                </strong>
                 <small>{config.years}-year ending value</small>
               </div>
               <div>
                 <span>Downside · 10th percentile</span>
-                <strong>{result ? money(result.p10) : '—'}</strong>
+                <strong className="atlas-metric-money">{result ? money(result.p10) : '—'}</strong>
                 <small>10% of paths finish below this</small>
               </div>
               <div>
@@ -806,7 +845,7 @@ export default function Atlas() {
                 </details>
               )}
               <a
-                href={`${REPO}/blob/codex/atlas-lab/docs/ATLAS_MODEL.md`}
+                href={`${REPO}/blob/main/docs/ATLAS_MODEL.md`}
                 target="_blank"
                 rel="noreferrer"
                 className="atlas-method-source"
@@ -842,8 +881,8 @@ export default function Atlas() {
         </section>
       </main>
       <footer className="atlas-footer">
-        <a href={`${REPO}/tree/codex/atlas-lab`} target="_blank" rel="noreferrer">
-          Built to be explored. Made to be forked. <Github size={15} />
+        <a href={`${REPO}`} target="_blank" rel="noreferrer">
+          A personal project by Chen Yang. <Github size={15} />
         </a>
         <p>TradeBo Atlas · Illustrative simulation, not a forecast or investment advice.</p>
         <span>{MODEL_VERSION}</span>
