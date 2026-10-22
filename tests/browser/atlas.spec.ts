@@ -371,6 +371,10 @@ test('mobile controls remain usable with no horizontal page overflow', async ({ 
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
     true,
   )
+  expect(
+    (await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze())
+      .violations,
+  ).toEqual([])
 })
 
 test('large dollar amounts stay readable on the smallest supported layout', async ({ page }) => {

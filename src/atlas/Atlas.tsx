@@ -302,7 +302,13 @@ export default function Atlas() {
             Research desk <ArrowUpRight size={13} />
           </a>
         </nav>
-        <a className="atlas-github" href={`${REPO}`} target="_blank" rel="noreferrer">
+        <a
+          className="atlas-github"
+          href={REPO}
+          target="_blank"
+          rel="noreferrer"
+          aria-label="View source on GitHub"
+        >
           <Github size={17} />
           <span>View source</span>
           <ArrowUpRight size={14} />
