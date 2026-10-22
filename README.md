@@ -15,7 +15,7 @@ A personal project by [Chen Yang](https://github.com/Chencharl).
 
 [**Open the live playground →**](https://chencharl.github.io/Trade_bo/)
 
-[Explore the model](docs/ATLAS_MODEL.md) · [Run locally](#run-it-locally) · [Contribute](CONTRIBUTING.md) · [Research desk](docs/RESEARCH_DESK.md)
+[Explore the model](docs/ATLAS_MODEL.md) · [Strategy Lab](https://chencharl.github.io/Trade_bo/#lab) · [Run locally](#run-it-locally) · [Contribute](CONTRIBUTING.md) · [Research desk](docs/RESEARCH_DESK.md)
 
 ![TradeBo Atlas interactive portfolio simulation](docs/atlas-preview.png)
 
@@ -46,7 +46,19 @@ The whole playground runs in your browser. No account, market-data subscription,
 | **A shareable result**              | Versioned URL state, SVG share cards, and JSON exports including inputs, assumptions, percentile paths, and all terminal values. |
 | **A transparent engine**            | Pure TypeScript math in a Web Worker, self-hosted fonts, zero runtime data requests, and analytic sanity checks.                 |
 
-This is a simulation and interaction-design project, **not an alpha claim**. Asset assumptions and scenarios are deliberately illustrative. There is no hidden live feed, claimed backtest, or implied expected investment outcome.
+Atlas is a simulation and interaction-design project, **not an alpha claim**. Its asset assumptions and scenarios are deliberately illustrative. Its simulated futures are not a historical backtest or an implied expected investment outcome.
+
+## Compare rules in Strategy Lab
+
+[**Open Strategy Lab →**](https://chencharl.github.io/Trade_bo/#lab)
+
+Strategy Lab adds a separate monthly market/cash evaluation workspace. Compare eight fixed rules across trend, momentum, reversal, volatility, breakout, and three baselines. Inspect lagged allocations, turnover costs, expanding training windows, and a final 60-month window excluded from automated rule selection.
+
+The default data is **synthetic**, not historical market performance. Import your own monthly-return CSV or a supported Kenneth French CSV/ZIP locally in the browser; no third-party market dataset is bundled. A paired six-month block bootstrap describes the inspected rule's observed difference from the market baseline, with its selection limits stated alongside the result. All results remain exploratory.
+
+![Strategy Lab: fixed trading rules, walk-forward selection, costs, and uncertainty on synthetic data](docs/strategy-lab-preview.png)
+
+Read the [calculation and data contract](docs/STRATEGY_LAB.md) and the [ten-project research comparison and method roadmap](docs/STRATEGY_RESEARCH.md). Atlas remains the place to explore simulated future paths; Strategy Lab evaluates fixed rules on an explicit return series.
 
 ## Run it locally
 
@@ -115,13 +127,13 @@ npm run test:e2e                               # Real-browser interaction tests
 python3 -m unittest discover -s tests -v       # Existing research contracts
 ```
 
-Checks include deterministic cash growth, covariance arithmetic, Monte Carlo mean agreement, month-six shock timing, constant allocation totals, URL validation, export consistency, keyboard controls, mobile layout, and preservation of the research engine’s contracts. CI runs the browser journeys in Chromium, Firefox, and WebKit. These engine checks do not replace testing on every physical device.
+Checks include deterministic cash growth, covariance arithmetic, Monte Carlo mean agreement, month-six shock timing, constant allocation totals, URL validation, export consistency, keyboard controls, mobile layout, and preservation of the research engine’s contracts. Strategy Lab adds independent fee/holdings arithmetic, future-perturbation checks, selection separation, paired bootstrap checks, bounded CSV/ZIP imports, and stale-result prevention. CI runs the browser journeys in Chromium, Firefox, and WebKit. These engine checks do not replace testing on every physical device.
 
 ## Put it on GitHub Pages
 
 The [public app](https://chencharl.github.io/Trade_bo/) is built from `main` by the [Pages workflow](.github/workflows/pages.yml). Every push to `main` runs formatting, numeric and Python tests, a production build, and browser journeys before deployment. A failed check stops publication.
 
-The deployed [build information](https://chencharl.github.io/Trade_bo/build-info.json) records the exact source commit, model version, and build time. Experiment links separately carry the simulation model version and inputs.
+The deployed [build information](https://chencharl.github.io/Trade_bo/build-info.json) records the exact source commit, Atlas model version, Strategy Lab version, and build time. Experiment links separately carry the simulation model version and inputs.
 
 To publish your own fork:
 
@@ -139,11 +151,17 @@ src/atlas/simulation.worker.ts   Background execution and request IDs
 src/atlas/Atlas.tsx              Experiment controls, comparison, exports
 src/atlas/Charts.tsx             Accessible SVG charts
 src/atlas/atlas.css              Responsive visual system
+src/lab/engine.ts                Lagged rules, accounting, selection & uncertainty
+src/lab/data.ts                  Synthetic fixture, local CSV/ZIP import & hashes
+src/lab/StrategyLab.tsx          Evaluation interface and reproducible exports
 src/App.tsx                     Original research desk
 backend/                        Python research API and provider adapter
 tests/atlas.test.ts              Numeric and reproducibility contracts
+tests/lab*.test.ts               Strategy accounting and import contracts
 tests/browser/                  Playwright user journeys
 docs/ATLAS_MODEL.md              Formulas, assumptions and boundaries
+docs/STRATEGY_LAB.md             Monthly rule evaluation and data contract
+docs/STRATEGY_RESEARCH.md        Primary-source comparison and method roadmap
 ```
 
 ## Make it your own

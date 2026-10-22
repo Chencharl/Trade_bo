@@ -8,4 +8,6 @@ The locally served typefaces are distributed under the SIL Open Font License 1.1
 - DM Sans: [license and copyright](../public/licenses/dm-sans.txt).
 - IBM Plex Mono: [license and copyright](../public/licenses/ibm-plex-mono.txt).
 
-License copies are also included in every production build under `licenses/`. React, Vite, TypeScript, Lucide, and development dependencies retain the notices supplied in their packages. No external market-data asset is distributed with Atlas.
+The Strategy Lab uses fflate for local ZIP decompression, under its [MIT license](../public/licenses/fflate.txt).
+
+License copies are also included in every production build under `licenses/`. React, Vite, TypeScript, Lucide, and development dependencies retain the notices supplied in their packages. No external market-data asset is distributed with TradeBo.

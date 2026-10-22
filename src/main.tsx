@@ -4,6 +4,13 @@ import { lazy, Suspense, useEffect, useState } from 'react'
 import Atlas from './atlas/Atlas'
 
 const ResearchDesk = lazy(() => import('./App'))
+const StrategyLab = lazy(() => import('./lab/StrategyLab'))
+const currentRoute = () =>
+  window.location.hash.startsWith('#lab')
+    ? 'lab'
+    : window.location.hash === '#research'
+      ? 'research'
+      : 'atlas'
 
 function ResearchEntry() {
   const [available, setAvailable] = useState(false)
@@ -61,18 +68,30 @@ function ResearchEntry() {
 }
 
 function Root() {
-  const [research, setResearch] = useState(window.location.hash === '#research')
+  const [route, setRoute] = useState(currentRoute)
+  const [labVisited, setLabVisited] = useState(currentRoute() === 'lab')
   useEffect(() => {
-    const navigate = () => setResearch(window.location.hash === '#research')
+    const navigate = () => {
+      const next = currentRoute()
+      setRoute(next)
+      if (next === 'lab') setLabVisited(true)
+    }
     window.addEventListener('hashchange', navigate)
     return () => window.removeEventListener('hashchange', navigate)
   }, [])
   return (
     <>
-      <div hidden={research}>
+      <div hidden={route !== 'atlas'}>
         <Atlas />
       </div>
-      {research && <ResearchEntry />}
+      <div hidden={route !== 'lab'}>
+        {labVisited && (
+          <Suspense fallback={<p>Opening Strategy Lab…</p>}>
+            <StrategyLab />
+          </Suspense>
+        )}
+      </div>
+      {route === 'research' && <ResearchEntry />}
     </>
   )
 }

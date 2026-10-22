@@ -5,6 +5,9 @@ const metadata = JSON.parse(await readFile(new URL('../package.json', import.met
 const engine = await readFile(new URL('../src/atlas/engine.ts', import.meta.url), 'utf8')
 const modelVersion = engine.match(/export const MODEL_VERSION = ['"]([^'"]+)['"]/)?.[1]
 if (!modelVersion) throw new Error('Cannot record the simulation model version.')
+const labEngine = await readFile(new URL('../src/lab/engine.ts', import.meta.url), 'utf8')
+const labVersion = labEngine.match(/export const LAB_VERSION = ['"]([^'"]+)['"]/)?.[1]
+if (!labVersion) throw new Error('Cannot record the strategy lab version.')
 
 let sourceCommit = null
 let sourceTreeDirty = null
@@ -27,6 +30,7 @@ await writeFile(
       name: metadata.name,
       version: metadata.version,
       modelVersion,
+      labVersion,
       sourceCommit,
       sourceTreeDirty,
       builtAt: new Date().toISOString(),

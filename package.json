@@ -1,6 +1,6 @@
 {
   "name": "tradebo-atlas",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "An interactive portfolio wind tunnel: explore, compare, and share 1,000 simulated futures.",
   "author": "Chen Yang",
   "license": "MIT",
@@ -21,15 +21,16 @@
     "dev": "vite --host 127.0.0.1",
     "build": "tsc -b && vite build && node scripts/build-info.mjs",
     "preview": "vite preview --host 127.0.0.1",
-    "format": "prettier --write src tests/atlas.test.ts tests/browser scripts/build-info.mjs .github/workflows playwright.config.ts vite.config.ts index.html README.md CONTRIBUTING.md",
-    "format:check": "prettier --check src tests/atlas.test.ts tests/browser scripts/build-info.mjs .github/workflows playwright.config.ts vite.config.ts index.html README.md CONTRIBUTING.md",
-    "test": "node --import tsx --test tests/atlas.test.ts",
+    "format": "prettier --write src tests/*.test.ts tests/browser scripts/build-info.mjs .github/workflows playwright.config.ts vite.config.ts index.html README.md CONTRIBUTING.md docs/STRATEGY_*.md",
+    "format:check": "prettier --check src tests/*.test.ts tests/browser scripts/build-info.mjs .github/workflows playwright.config.ts vite.config.ts index.html README.md CONTRIBUTING.md docs/STRATEGY_*.md",
+    "test": "node --import tsx --test tests/*.test.ts",
     "test:e2e": "playwright test"
   },
   "dependencies": {
     "@fontsource/dm-sans": "^5.3.0",
     "@fontsource/ibm-plex-mono": "^5.3.0",
     "@fontsource/space-grotesk": "^5.3.0",
+    "fflate": "^0.8.3",
     "lucide-react": "^0.468.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1"
@@ -43,6 +44,6 @@
     "prettier": "^3.9.9",
     "tsx": "^4.23.15",
     "typescript": "~5.9.2",
-    "vite": "^7.1.7"
+    "vite": "^7.3.7"
   }
 }
