@@ -1,6 +1,8 @@
-# Contributing to TradeBo Atlas
+# Contributing to TradeBo
 
-TradeBo Atlas is a personal project by Chen Yang. Ideas, bug reports, and focused pull requests are welcome.
+TradeBo is a personal project by Chen Yang. Ideas, bug reports, and focused pull requests are welcome.
+
+Use the [product goal and acceptance gates](docs/PRODUCT_GOAL.md) to scope changes. Explain which priority a feature serves and how its behavior can be checked; defer additional methods until their data and independent fixtures are ready. Goal changes require explicit user agreement and a decision record. An evaluator may correctly report underperformance or an inconclusive result; passing tests does not establish an investment edge.
 
 ## Report a problem
 

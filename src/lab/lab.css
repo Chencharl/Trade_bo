@@ -1173,3 +1173,29 @@
     scroll-behavior: auto !important;
   }
 }
+
+.lab-window-dates {
+  display: block;
+  margin-top: 5px;
+  font-weight: 400;
+  font-size: 11px;
+  white-space: nowrap;
+}
+.lab-inspect-winner {
+  padding: 7px 0;
+  border: 0;
+  background: transparent;
+  color: #3a5aab;
+  text-decoration: underline;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+}
+.lab-selection h3 {
+  font-size: 16px;
+  margin: 26px 0 14px;
+}
+.lab-selection table th[scope='row'],
+.lab-selection table thead th:nth-child(2) {
+  text-align: left;
+}
