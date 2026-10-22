@@ -297,6 +297,9 @@ export default function Atlas() {
           <a className="atlas-nav-active" href="#atlas-main">
             Playground
           </a>
+          <a href="#lab" className="atlas-lab-link">
+            Strategy lab
+          </a>
           <button onClick={showMethod}>Under the hood</button>
           <a href="#research" className="research-link">
             Research desk <ArrowUpRight size={13} />
@@ -337,6 +340,9 @@ export default function Atlas() {
               <i />
               <span>RUNS IN YOUR BROWSER</span>
             </div>
+            <a href="#lab" className="atlas-lab-entry">
+              Explore Strategy Lab <ArrowUpRight size={14} />
+            </a>
           </div>
         </section>
         <div className="atlas-toolbar">
