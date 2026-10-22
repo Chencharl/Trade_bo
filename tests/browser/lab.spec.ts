@@ -4,6 +4,7 @@ import { createHash } from 'node:crypto'
 import { strToU8, zipSync } from 'fflate'
 import { STRATEGIES, type LabEvaluation } from '../../src/lab/engine'
 import type { Dataset } from '../../src/lab/data'
+import { verifyLabReport } from '../../src/lab/report'
 
 type Report = {
   engine: string
@@ -95,7 +96,7 @@ test('Strategy Lab is directly accessible, discoverable from Atlas, and exports 
   const comparison = page.getByRole('table', { name: 'Strategy comparison' })
   await expect(comparison.locator('tbody tr')).toHaveCount(8)
   const exported = await report(page)
-  expect(exported.engine).toBe('lab-1')
+  expect(exported.engine).toBe('lab-2')
   expect(exported.rules).toEqual(STRATEGIES)
   expect(exported.dataset.kind).toBe('synthetic')
   expect(exported.dataset.rows).toHaveLength(432)
@@ -446,4 +447,71 @@ test('320-pixel layout and expanded evidence tables support keyboard access and 
   await expect(cost).toHaveValue('11')
   expect(await noOverflow()).toBe(true)
   expect((await scan()).violations).toEqual([])
+})
+
+test('selector baselines display the exported dates and metrics and the downloaded report recomputes', async ({
+  page,
+}) => {
+  await page.goto('/#lab')
+  await ready(page)
+  const exported = await report(page)
+  expect((await verifyLabReport(exported)).calculationMatches).toBe(true)
+  const table = page.getByRole('table', { name: 'Selector and baseline comparison', exact: true })
+  await expect(table.locator('tbody')).toHaveCount(2)
+  const windows = [
+    [exported.evaluation.walkForward, ...exported.evaluation.walkForward.baselines],
+    [
+      exported.evaluation.frozenSelection,
+      ...exported.evaluation.results.filter((row) =>
+        ['market', 'cash', 'balanced'].includes(row.id),
+      ),
+    ],
+  ]
+  for (let window = 0; window < 2; window++) {
+    const rows = table.locator('tbody').nth(window).locator('tr')
+    await expect(rows).toHaveCount(4)
+    for (let i = 0; i < 4; i++) {
+      await expect(rows.nth(i).locator('td').nth(0)).toHaveText(
+        `${(windows[window][i].metrics.cagr * 100).toFixed(1)}%`,
+      )
+      await expect(rows.nth(i).locator('td').nth(1)).toHaveText(
+        `${(windows[window][i].metrics.maxDrawdown * 100).toFixed(1)}%`,
+      )
+    }
+  }
+  await expect(table.locator('tbody').first()).toContainText('Jan 1997 — Dec 2020')
+  await expect(table.locator('tbody').nth(1)).toContainText('Jan 2021 — Dec 2025')
+  await page.getByRole('button', { name: 'Inspect the frozen rule', exact: true }).click()
+  await ready(page)
+  expect((await report(page)).evaluation.config.selectedStrategy).toBe(
+    exported.evaluation.frozenSelection.chosenId,
+  )
+})
+
+test('declining input abstains in Cash and reports the actual partial-fold test coverage', async ({
+  page,
+}) => {
+  await page.goto('/#lab')
+  await ready(page)
+  await sourceDetails(page, 'Generated declining market; no historical claims')
+  await upload(page, 'declining-fixture.csv', Buffer.from(canonicalCSV(157, -0.01, 0)))
+  await expect(
+    page.getByRole('heading', { name: 'declining-fixture.csv', exact: true }),
+  ).toBeVisible()
+  await ready(page)
+  const exported = await report(page)
+  expect(exported.evaluation.frozenSelection.chosenId).toBe('cash')
+  expect(exported.evaluation.frozenSelection.selectionReason).toBe('cash-abstention')
+  expect(exported.evaluation.frozenSelection.trainingSharpe).toBeNull()
+  expect(exported.evaluation.frozenSelection.metrics.totalReturn).toBe(0)
+  await expect(page.locator('.lab-selection')).toContainText('13 TEST MONTHS · 2 FOLDS')
+  await expect(
+    page.getByText('No candidate had a positive, defined training score. The selector held cash.'),
+  ).toBeVisible()
+  await expect(
+    page
+      .getByRole('table', { name: 'Selector and baseline comparison' })
+      .getByRole('rowheader', { name: 'Frozen: Cash', exact: true }),
+  ).toBeVisible()
+  expect((await verifyLabReport(exported)).calculationMatches).toBe(true)
 })

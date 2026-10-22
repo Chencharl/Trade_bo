@@ -16,9 +16,9 @@ Atlas and Strategy Lab work without an account. Their default data and assumptio
 
 ## What we are building toward
 
-One research workspace where investors and developers can compare strategies on consistent data, understand their risks and costs, and reproduce the results.
+A strategy research platform for testing investment methods against simple baselines with consistent data, explicit costs and risks, and reproducible results.
 
-The next priorities are broader strategy coverage, better historical-data support, and a shared evaluation framework across portfolio and strategy research. The [roadmap](docs/STRATEGY_RESEARCH.md#method-roadmap) separates implemented methods from proposed work.
+The [product goal](docs/PRODUCT_GOAL.md) puts evaluator correctness, comparable benchmarks, and reproducibility before additional methods.
 
 <details>
 <summary>Product previews</summary>

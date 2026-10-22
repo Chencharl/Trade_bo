@@ -126,11 +126,13 @@ During development:
 
 1. Start with 60 post-warm-up training months.
 2. Score the fixed candidates on those months using their net returns after the configured fee.
-3. Choose the highest training excess Sharpe among the rules other than the cash baseline. Break ties in the declared descriptor order.
+3. Choose the highest strictly positive, finite training excess Sharpe among the rules other than the cash baseline. Break exact ties in the declared descriptor order. If no candidate qualifies, hold Cash.
 4. Apply that rule ID for the next annual test block. Its signals remain lagged and continue updating each month.
 5. Expand the training window and repeat for the next available annual block, ending at the reserved-window boundary.
 
-The final development test block can contain fewer than 12 months if the reserved-window boundary cuts it short. Its exact dates remain in the selection ledger.
+The final development test block can contain fewer than 12 months if the reserved-window boundary cuts it short. Its exact dates remain in the selection ledger. The interface reports the actual number of development-test months: 156 inputs provide 12 test months; 157 provide 13, including a one-month final fold. The minimum is a software requirement, not a statistical sufficiency claim.
+
+Market, Cash, and 60/40 baselines run over exactly the same development-test dates, starting from cash with the same fee convention. Each keeps continuous holdings across folds. Fold baseline returns are ratios of that continuous wealth ledger, with no repeated initial investment fee. `split.walkForwardStart` identifies the first test month; it differs from the start of development training. The selector/baseline table also reports the separate final-window comparisons; these windows must not be compared as though they covered the same dates.
 
 The training score is:
 
@@ -139,7 +141,7 @@ excess_t = netReturn_t - cashReturn_t
 trainingExcessSharpe = sqrt(12) × mean(excess) / sampleSD(excess)
 ```
 
-An undefined Sharpe ranks below every finite score. If every eligible score is undefined, the declared-order fallback is Market. This is deterministic fallback behavior, not evidence that Market is statistically preferable.
+In `lab-2`, undefined, zero, and negative training scores are ineligible. With no positive finite score, the selector chooses Cash and records `selectionReason: cash-abstention` and `trainingSharpe: null`. Otherwise its reason is `positive-training-score`. Cash is not assigned a fictitious Sharpe of zero. This is an explicit allocation policy relative to Cash, not a statistical significance threshold or proof of a useful strategy. Earlier `lab-1` reports used a Market fallback and require that original engine to reproduce them.
 
 After development, choose one final rule ID from development data only. Freeze that ID for all final 60 months. Freezing a rule does not freeze its market weight: its formula continues to consume prior completed observations. Each of the eight fixed rules is also evaluated over those same final dates, independently initialized from cash with wealth `1` and charged its own entry cost.
 
@@ -166,6 +168,16 @@ This is a descriptive, conditional interval. The procedure does not rerun automa
 
 ## Reproduction and acceptance checks
 
+Export a research run from Strategy Lab, then use the matching source release:
+
+```bash
+npm run verify:report -- /path/to/tradebo-strategy-lab.json
+```
+
+The offline verifier supports `lab-2` reports, caps the input file at 16 MiB, checks the canonical data hash and rule descriptors, and recomputes every evaluation field and ledger. It validates metadata types, requires exact report/dataset/row/evaluation fields, and rejects mismatched versions. Counts, seeds, and configuration parameters must match exactly. Other numeric agreement uses `abs(actual-expected) <= 1e-10 * max(1, abs(expected))`; other values must match exactly. A failure exits nonzero. The output explicitly leaves data authenticity, raw-file hash verification, and source-commit verification false. Verification checks calculation consistency, not source authenticity, original-file bytes, or investment merit; a self-consistent edited dataset is not authenticated by its hash.
+
+When production build information is available, exports record the source commit and dirty-tree status and pin the methodology link to that commit. Unavailable build metadata remains null. These fields are provenance declarations, not signatures or an independent attestation of the exported file. Reports from older engine versions require the corresponding checkout. Browser reopening of reports remains future work.
+
 The experiment report includes the dataset and source notes, raw-file and canonical-row hashes when applicable, `LAB_VERSION`, configuration, all result ledgers, development selection folds, cost sensitivity, bootstrap output, and interpretation limits. Atlas's model version is identified separately. Numerical behavior must be reproducible from the same canonical rows, version, configuration, and deterministic bootstrap settings.
 
 Required checks cover:
@@ -174,7 +186,7 @@ Required checks cover:
 - Prefix invariance: perturbing later data cannot change earlier targets or selections.
 - Exact trend, momentum, reversal, volatility, and breakout window boundaries, including ties and zero variance.
 - Common reserved dates and initial capital; selection excludes the reserved returns and uses a separate holdings ledger.
-- Stable selection ties and undefined-Sharpe fallback.
+- Stable selection ties, explicit cash abstention, continuous baseline holdings, and exits into cash.
 - Generic decimal-return parsing; French percentage conversion, monthly/annual separation, invalid sentinels, duplicates, and gaps.
 - Deterministic paired bootstrap sampling and correct arithmetic-difference labeling.
 - Browser import, synthetic labeling, navigation, table/export consistency, and readable mobile/keyboard interactions.

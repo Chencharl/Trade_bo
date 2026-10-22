@@ -12,7 +12,8 @@ import { DEFAULT_LAB_CONFIG, evaluateLab, LAB_VERSION, STRATEGIES } from './engi
 import type { LabConfig } from './engine'
 import { createDemoDataset, datasetCSV, importDataset } from './data'
 import type { Dataset } from './data'
-import { MODEL_VERSION } from '../atlas/engine'
+import { createLabReport } from './report'
+import type { BuildProvenance } from './report'
 import './lab.css'
 
 type Evaluation = ReturnType<typeof evaluateLab>
@@ -117,9 +118,26 @@ export default function StrategyLab() {
   const [error, setError] = useState('')
   const [sourceLabel, setSourceLabel] = useState('')
   const [notice, setNotice] = useState('')
+  const [build, setBuild] = useState<BuildProvenance>({ sourceCommit: null, sourceTreeDirty: null })
   const fileRef = useRef<HTMLInputElement>(null)
   const runKey = JSON.stringify([dataset?.dataSha256, config])
   const result = completed?.key === runKey ? completed.value : null
+
+  useEffect(() => {
+    const controller = new AbortController()
+    fetch(new URL('build-info.json', document.baseURI), { signal: controller.signal })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((info) => {
+        if (info?.labVersion === LAB_VERSION && /^[a-f0-9]{40}$/.test(info.sourceCommit))
+          setBuild({
+            sourceCommit: info.sourceCommit,
+            sourceTreeDirty:
+              typeof info.sourceTreeDirty === 'boolean' ? info.sourceTreeDirty : null,
+          })
+      })
+      .catch(() => {})
+    return () => controller.abort()
+  }, [])
 
   useEffect(() => {
     let active = true
@@ -219,23 +237,7 @@ export default function StrategyLab() {
     if (!dataset || !result || busy || importing) return
     download(
       'tradebo-strategy-lab.json',
-      JSON.stringify(
-        {
-          engine: LAB_VERSION,
-          atlasModelVersion: MODEL_VERSION,
-          exportedAt: new Date().toISOString(),
-          dataset,
-          rules: STRATEGIES,
-          evaluation: result,
-          execution:
-            'Signals use completed months only. Target market/cash fractions are rebalanced at the next monthly boundary. Turnover uses the prior drifted allocation; proportional costs are charged before monthly returns. No terminal liquidation.',
-          interpretation:
-            'Exploratory evaluation. Synthetic data are not market performance. Imported snapshots may be revised and are not verified point-in-time or directly investable. Bootstrap intervals condition on realized returns and omit strategy-search uncertainty. No execution, forecasts, or alpha claims.',
-          methodology: `${REPO}/blob/main/docs/STRATEGY_LAB.md`,
-        },
-        null,
-        2,
-      ),
+      JSON.stringify(createLabReport(dataset, result, build), null, 2),
       'application/json',
     )
     setNotice(
@@ -620,7 +622,10 @@ export default function StrategyLab() {
                   <span className="lab-kicker">AUDIT THE SELECTION</span>
                   <h2>Winning the past is only the first step.</h2>
                 </div>
-                <span>{result.walkForward.folds.length} CHRONOLOGICAL TEST WINDOWS</span>
+                <span>
+                  {result.walkForward.ledger.length} TEST MONTHS · {result.walkForward.folds.length}{' '}
+                  FOLDS
+                </span>
               </div>
               <div className="lab-selection-summary">
                 <div>
@@ -640,13 +645,99 @@ export default function StrategyLab() {
                     Training Sharpe {number(result.frozenSelection.trainingSharpe)} · final-window
                     net annual return {pct(result.frozenSelection.metrics.cagr)}.
                   </p>
+                  {result.frozenSelection.selectionReason === 'cash-abstention' && (
+                    <p>
+                      No candidate had a positive, defined training score. The selector held cash.
+                    </p>
+                  )}
+                  <button
+                    className="lab-inspect-winner"
+                    onClick={() =>
+                      setConfig((current) => ({
+                        ...current,
+                        selectedStrategy: result.frozenSelection.chosenId,
+                      }))
+                    }
+                  >
+                    Inspect the frozen rule
+                  </button>
                 </div>
               </div>
               <p className="lab-footnote">
                 This automatic choice is separate from the rule you inspect above. The selector
-                compares seven declared candidates by training excess Sharpe. Its ledger carries
-                actual holdings across switches. Development and final-window returns cover
-                different dates; compare each within its own window.
+                compares seven declared candidates by training excess Sharpe and holds cash when
+                none has a positive, defined score. Its ledger carries actual holdings across
+                switches. This selection policy does not establish an investment edge.
+              </p>
+              <h3>Selection and baselines, on matching dates.</h3>
+              <div
+                className="lab-table-wrap"
+                tabIndex={0}
+                role="region"
+                aria-label="Scroll selector and baseline comparison"
+              >
+                <table aria-label="Selector and baseline comparison">
+                  <thead>
+                    <tr>
+                      <th>Window</th>
+                      <th>Method</th>
+                      <th>Net annual return</th>
+                      <th>Max drawdown</th>
+                      <th>Market exposure</th>
+                      <th>Annual turnover</th>
+                    </tr>
+                  </thead>
+                  {[
+                    {
+                      name: 'Development tests',
+                      start: result.split.walkForwardStart,
+                      end: result.walkForward.ledger.at(-1)!.date,
+                      runs: [
+                        { name: 'Automatic selector', ...result.walkForward },
+                        ...result.walkForward.baselines,
+                      ],
+                    },
+                    {
+                      name: 'Reserved evaluation',
+                      start: result.split.holdoutStart,
+                      end: result.split.holdoutEnd,
+                      runs: [
+                        {
+                          name: `Frozen: ${ruleName(result.frozenSelection.chosenId)}`,
+                          ...result.frozenSelection,
+                        },
+                        ...result.results.filter((run) =>
+                          ['market', 'cash', 'balanced'].includes(run.id),
+                        ),
+                      ],
+                    },
+                  ].map((window) => (
+                    <tbody key={window.name}>
+                      {window.runs.map((run, index) => (
+                        <tr key={run.name}>
+                          {index === 0 && (
+                            <th scope="rowgroup" rowSpan={4}>
+                              {window.name}
+                              <small className="lab-window-dates">
+                                {month(window.start)} — {month(window.end)}
+                              </small>
+                            </th>
+                          )}
+                          <th scope="row">{run.name}</th>
+                          <td>{pct(run.metrics.cagr)}</td>
+                          <td>{pct(run.metrics.maxDrawdown)}</td>
+                          <td>{pct(run.metrics.averageExposure)}</td>
+                          <td>{pct(run.metrics.annualTurnover)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  ))}
+                </table>
+              </div>
+              <p className="lab-footnote">
+                Each row starts from cash with the same costs and dates within its window. Holdings
+                continue across development folds; the reserved window starts a separate evaluation.
+                60 / 40 means market/cash.
               </p>
               <details>
                 <summary>Open the walk-forward selection ledger</summary>
@@ -664,6 +755,9 @@ export default function StrategyLab() {
                         <th>Chosen rule</th>
                         <th>Training Sharpe</th>
                         <th>Next-window return</th>
+                        <th>Market return</th>
+                        <th>Cash return</th>
+                        <th>60 / 40 return</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -676,6 +770,9 @@ export default function StrategyLab() {
                           <td>{ruleName(fold.chosenId)}</td>
                           <td>{number(fold.trainingSharpe)}</td>
                           <td>{pct(fold.testReturn)}</td>
+                          <td>{pct(fold.baselineReturns.market)}</td>
+                          <td>{pct(fold.baselineReturns.cash)}</td>
+                          <td>{pct(fold.baselineReturns.balanced)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -760,6 +857,10 @@ export default function StrategyLab() {
             <span className="lab-kicker">KEEP THE EXPERIMENT REPRODUCIBLE</span>
             <h2>Take the evidence with you.</h2>
             <p>Export the source hashes, data, rules, windows, and every monthly position.</p>
+            <p className="lab-footnote">
+              Recompute a saved report locally with{' '}
+              <code>npm run verify:report -- report.json</code>.
+            </p>
           </div>
           <button
             className="lab-button primary"

@@ -179,6 +179,7 @@ test('all individual rules and the frozen selector share the exact final sixty-m
   assert.deepEqual(result.split, {
     warmupEnd: rows[23].date,
     developmentStart: rows[24].date,
+    walkForwardStart: rows[84].date,
     holdoutStart: rows[97].date,
     holdoutEnd: rows[156].date,
     developmentMonths: 73,
@@ -212,7 +213,7 @@ test('final-window return changes cannot change training scores, chosen rule, or
   assert.notDeepEqual(before.frozenSelection.ledger, after.frozenSelection.ledger)
 })
 
-test('each walk-forward winner maximizes net training excess Sharpe with stable descriptor-order ties', () => {
+test('each positive walk-forward winner maximizes net training excess Sharpe', () => {
   const rows = observations()
   const result = evaluateLab(rows, DEFAULT_LAB_CONFIG)
   result.walkForward.folds.forEach((fold, index) => {
@@ -221,18 +222,105 @@ test('each walk-forward winner maximizes net training excess Sharpe with stable 
       sharpe: backtestStrategy(rows, strategy.id, 24, 84 + index * 12, 10).metrics.sharpe,
     }))
     candidates.sort((a, b) => (b.sharpe ?? -Infinity) - (a.sharpe ?? -Infinity))
+    assert.ok(candidates[0].sharpe !== null && candidates[0].sharpe > 0)
     assert.equal(fold.chosenId, candidates[0].id)
     assert.equal(fold.trainingSharpe, candidates[0].sharpe)
+    assert.equal(fold.selectionReason, 'positive-training-score')
     assert.equal(fold.trainStart, rows[24].date)
     assert.equal(fold.trainEnd, rows[83 + index * 12].date)
   })
   const flat = evaluateLab(constantRows(0, 0), { ...DEFAULT_LAB_CONFIG, costBps: 0 })
-  assert.equal(flat.frozenSelection.chosenId, 'market')
+  assert.equal(flat.frozenSelection.chosenId, 'cash')
   assert.equal(flat.frozenSelection.trainingSharpe, null)
+  assert.equal(flat.frozenSelection.selectionReason, 'cash-abstention')
   assert.ok(
     flat.walkForward.folds.every(
-      (fold) => fold.chosenId === 'market' && fold.trainingSharpe === null,
+      (fold) =>
+        fold.chosenId === 'cash' &&
+        fold.trainingSharpe === null &&
+        fold.selectionReason === 'cash-abstention',
     ),
+  )
+})
+
+test('selector abstains in cash when negative or undefined training scores cannot beat the cash policy', () => {
+  for (const costBps of [0, 10]) {
+    const result = evaluateLab(constantRows(-0.01, 0, 156), {
+      ...DEFAULT_LAB_CONFIG,
+      costBps,
+    })
+    assert.equal(result.frozenSelection.chosenId, 'cash')
+    assert.equal(result.frozenSelection.trainingSharpe, null)
+    assert.equal(result.frozenSelection.selectionReason, 'cash-abstention')
+    assert.equal(result.frozenSelection.metrics.totalReturn, 0)
+    assert.equal(result.frozenSelection.metrics.annualTurnover, 0)
+    assert.equal(result.walkForward.metrics.totalReturn, 0)
+    assert.equal(result.walkForward.metrics.averageExposure, 0)
+    assert.ok(
+      result.frozenSelection.ledger.every(
+        (row) => row.targetWeight === 0 && row.costFraction === 0,
+      ),
+    )
+    assert.ok(
+      result.walkForward.folds.every(
+        (fold) =>
+          fold.chosenId === 'cash' &&
+          fold.trainingSharpe === null &&
+          fold.selectionReason === 'cash-abstention',
+      ),
+    )
+    // Abstention changes the selector policy, not the individual declared rules.
+    assert.ok(result.results.find((run) => run.id === 'market')!.metrics.cagr < 0)
+    assert.equal(result.results.find((run) => run.id === 'trend')!.metrics.totalReturn, 0)
+  }
+})
+
+test('positive finite scores remain eligible and exact score ties follow descriptor order', () => {
+  const rows = constantRows(0, 0).map((row, index) => ({
+    ...row,
+    marketReturn: index % 2 ? 0.005 : 0.02,
+  }))
+  const result = evaluateLab(rows, DEFAULT_LAB_CONFIG)
+  const marketScore = backtestStrategy(rows, 'market', 24, rows.length - 60, 10).metrics.sharpe
+  const trendScore = backtestStrategy(rows, 'trend', 24, rows.length - 60, 10).metrics.sharpe
+  assert.ok(marketScore !== null && marketScore > 0)
+  assert.equal(trendScore, marketScore)
+  assert.equal(result.frozenSelection.chosenId, 'market')
+  assert.equal(result.frozenSelection.trainingSharpe, marketScore)
+  assert.equal(result.frozenSelection.selectionReason, 'positive-training-score')
+  assert.ok(
+    result.walkForward.folds.every(
+      (fold) =>
+        fold.chosenId === 'market' &&
+        fold.selectionReason === 'positive-training-score' &&
+        fold.trainingSharpe! > 0,
+    ),
+  )
+})
+
+test('a later cash abstention pays the actual exit cost and then stops trading', () => {
+  const rows = constantRows(0, 0).map((row, index) => ({
+    ...row,
+    marketReturn: index < 84 ? 0.01 : index === 84 ? -0.9 : 0,
+  }))
+  const result = evaluateLab(rows, DEFAULT_LAB_CONFIG)
+  assert.equal(result.walkForward.folds[0].selectionReason, 'positive-training-score')
+  assert.equal(result.walkForward.folds[1].selectionReason, 'cash-abstention')
+  const previous = result.walkForward.ledger[11]
+  const exit = result.walkForward.ledger[12]
+  assert.ok(previous.targetWeight > 0)
+  const driftedWeight =
+    (previous.targetWeight * (1 + rows[95].marketReturn)) / (1 + previous.grossReturn)
+  assert.equal(exit.targetWeight, 0)
+  near(exit.previousWeight, driftedWeight)
+  near(exit.turnover, driftedWeight)
+  near(exit.costFraction, driftedWeight * 0.001)
+  near(exit.netReturn, -driftedWeight * 0.001)
+  near(result.walkForward.folds[1].testReturn, -driftedWeight * 0.001)
+  assert.ok(
+    result.walkForward.ledger
+      .slice(13)
+      .every((row) => row.turnover === 0 && row.targetWeight === 0),
   )
 })
 
@@ -259,6 +347,78 @@ test('walk-forward strategy switches execute one continuous allocation ledger, n
     const period = result.walkForward.ledger.slice(index * 12, index * 12 + 12)
     near(fold.testReturn, period.reduce((equity, row) => equity * (1 + row.netReturn), 1) - 1)
   })
+})
+
+test('development baselines match the selector calendar and independent accounting at minimum, partial, and long windows', () => {
+  for (const count of [156, 157, 432]) {
+    const rows = constantRows(0.02, 0.001, count)
+    const result = evaluateLab(rows, DEFAULT_LAB_CONFIG)
+    const developmentRows = rows.slice(84, count - 60)
+    assert.equal(result.split.walkForwardStart, rows[84].date)
+    assert.deepEqual(
+      result.walkForward.baselines.map((baseline) => baseline.id),
+      ['market', 'cash', 'balanced'],
+    )
+    for (const baseline of result.walkForward.baselines) {
+      assert.deepEqual(
+        baseline.ledger.map((row) => row.date),
+        result.walkForward.ledger.map((row) => row.date),
+      )
+      assert.deepEqual(
+        baseline.ledger.map((row) => row.date),
+        developmentRows.map((row) => row.date),
+      )
+      const target = baseline.id === 'market' ? 1 : baseline.id === 'cash' ? 0 : 0.6
+      let previous = 0
+      let wealth = 1
+      let totalTurnover = 0
+      developmentRows.forEach((row, index) => {
+        const turnover = Math.abs(target - previous)
+        const fee = turnover * 0.001
+        const grossFactor = target * (1 + row.marketReturn) + (1 - target) * (1 + row.cashReturn)
+        const netFactor = (1 - fee) * grossFactor
+        wealth *= netFactor
+        totalTurnover += turnover
+        near(baseline.ledger[index].previousWeight, previous)
+        near(baseline.ledger[index].turnover, turnover)
+        near(baseline.ledger[index].costFraction, fee)
+        near(baseline.ledger[index].netReturn, netFactor - 1)
+        near(baseline.ledger[index].equity, wealth, 1e-9)
+        previous = (target * (1 + row.marketReturn)) / grossFactor
+      })
+      near(baseline.metrics.totalReturn, wealth - 1, 1e-9)
+      near(baseline.metrics.cagr, wealth ** (12 / developmentRows.length) - 1)
+      near(baseline.metrics.annualTurnover, (totalTurnover * 12) / developmentRows.length)
+    }
+  }
+})
+
+test('fold benchmark returns slice continuous holdings without annual reentry or resetting drift', () => {
+  const rows = constantRows(0.02, 0.001, 157)
+  const result = evaluateLab(rows, DEFAULT_LAB_CONFIG)
+  const [first, partial] = result.walkForward.folds
+  assert.equal(result.walkForward.folds.length, 2)
+  near(first.baselineReturns.market, (1 - 0.001) * 1.02 ** 12 - 1)
+  near(first.baselineReturns.cash, 1.001 ** 12 - 1)
+  near(partial.baselineReturns.market, 0.02)
+  near(partial.baselineReturns.cash, 0.001)
+  const drift = (0.6 * 1.02) / (0.6 * 1.02 + 0.4 * 1.001)
+  const nextFee = Math.abs(0.6 - drift) * 0.001
+  near(partial.baselineReturns.balanced, (1 - nextFee) * (0.6 * 1.02 + 0.4 * 1.001) - 1)
+  const market = result.walkForward.baselines.find((baseline) => baseline.id === 'market')!
+  const balanced = result.walkForward.baselines.find((baseline) => baseline.id === 'balanced')!
+  assert.equal(market.ledger[12].turnover, 0)
+  near(balanced.ledger[12].previousWeight, drift)
+  near(balanced.ledger[12].costFraction, nextFee)
+
+  for (const baseline of result.walkForward.baselines) {
+    const compoundedFolds = result.walkForward.folds.reduce(
+      (wealth, fold) =>
+        wealth * (1 + fold.baselineReturns[baseline.id as 'market' | 'cash' | 'balanced']),
+      1,
+    )
+    near(compoundedFolds - 1, baseline.metrics.totalReturn)
+  }
 })
 
 test('cost sensitivity keeps the selected rule fixed and total return decreases with higher costs', () => {

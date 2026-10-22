@@ -349,6 +349,11 @@ function App() {
       setBusy(false)
     }
   }
+  async function refresh() {
+    setPaperMessage('')
+    if (board) await recalculate(board.portfolio.model, board.symbols)
+    else await load(mode)
+  }
   function openEditor() {
     if (board) {
       setDraft(structuredClone(board.portfolio.model))
@@ -567,7 +572,7 @@ function App() {
           </span>
           <button
             className="text-button refresh-button"
-            onClick={() => void load(mode)}
+            onClick={() => void refresh()}
             disabled={busy}
           >
             <RefreshCw size={14} /> Refresh

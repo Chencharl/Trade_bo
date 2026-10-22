@@ -1,5 +1,5 @@
 /** Independent, monthly, long-only equity/cash research engine. All returns are decimals. */
-export const LAB_VERSION = 'lab-1'
+export const LAB_VERSION = 'lab-2'
 
 export type MonthlyRow = { date: string; marketReturn: number; cashReturn: number }
 
@@ -63,6 +63,8 @@ export const STRATEGIES = [
 ] as const
 
 export type StrategyId = (typeof STRATEGIES)[number]['id']
+export type BaselineId = Extract<StrategyId, 'market' | 'cash' | 'balanced'>
+export type SelectionReason = 'positive-training-score' | 'cash-abstention'
 export type LabConfig = {
   costBps: number
   selectedStrategy: StrategyId
@@ -104,7 +106,9 @@ export type WalkForwardFold = {
   testEnd: string
   chosenId: StrategyId
   trainingSharpe: number | null
+  selectionReason: SelectionReason
   testReturn: number
+  baselineReturns: Record<BaselineId, number>
 }
 export type BootstrapInterval = {
   metric: 'annualized mean return difference'
@@ -121,14 +125,19 @@ export type LabEvaluation = {
   split: {
     warmupEnd: string
     developmentStart: string
+    walkForwardStart: string
     holdoutStart: string
     holdoutEnd: string
     developmentMonths: number
     holdoutMonths: number
   }
   results: StrategyResult[]
-  walkForward: Backtest & { folds: WalkForwardFold[] }
-  frozenSelection: Backtest & { chosenId: StrategyId; trainingSharpe: number | null }
+  walkForward: Backtest & { folds: WalkForwardFold[]; baselines: StrategyResult[] }
+  frozenSelection: Backtest & {
+    chosenId: StrategyId
+    trainingSharpe: number | null
+    selectionReason: SelectionReason
+  }
   costSensitivity: { costBps: number; cagr: number; totalReturn: number }[]
   uncertainty: BootstrapInterval
 }
@@ -137,6 +146,7 @@ const WARMUP_MONTHS = 24
 const MIN_TRAINING_MONTHS = 60
 const FINAL_MONTHS = 60
 const MIN_ROWS = 156
+const BASELINE_IDS: readonly BaselineId[] = ['market', 'cash', 'balanced']
 
 function mean(values: readonly number[]): number {
   return values.reduce((sum, value) => sum + value, 0) / values.length
@@ -432,11 +442,12 @@ export function evaluateLab(rows: readonly MonthlyRow[], config: LabConfig): Lab
   const run = (id: StrategyId, start: number, end: number, cost = config.costBps) =>
     execute(rows, start, end, (month) => weights[id][month], cost)
   const choose = (end: number) => {
-    // Undefined Sharpe ranks below every finite score. If all are undefined,
-    // descriptor order deterministically retains Market, the first candidate.
-    let chosenId: StrategyId = 'market'
+    // Cash abstention is the declared allocation policy when no candidate has
+    // positive finite training excess Sharpe. It is not a significance test,
+    // and cash's undefined Sharpe remains null rather than being scored as zero.
+    let chosenId: StrategyId = 'cash'
     let trainingSharpe: number | null = null
-    let bestScore = -Infinity
+    let bestScore = 0
     for (const strategy of STRATEGIES) {
       if (strategy.id === 'cash') continue
       const sharpe = run(strategy.id, WARMUP_MONTHS, end).metrics.sharpe
@@ -447,7 +458,9 @@ export function evaluateLab(rows: readonly MonthlyRow[], config: LabConfig): Lab
         trainingSharpe = sharpe
       }
     }
-    return { chosenId, trainingSharpe }
+    const selectionReason: SelectionReason =
+      chosenId === 'cash' ? 'cash-abstention' : 'positive-training-score'
+    return { chosenId, trainingSharpe, selectionReason }
   }
 
   const folds: WalkForwardFold[] = []
@@ -462,6 +475,7 @@ export function evaluateLab(rows: readonly MonthlyRow[], config: LabConfig): Lab
       testEnd: rows[end - 1].date,
       ...selection,
       testReturn: 0,
+      baselineReturns: { market: 0, cash: 0, balanced: 0 },
     })
     walkWeights.push(...weights[selection.chosenId].slice(start, end))
   }
@@ -472,11 +486,23 @@ export function evaluateLab(rows: readonly MonthlyRow[], config: LabConfig): Lab
     (month) => walkWeights[month - walkStart],
     config.costBps,
   )
+  // Each baseline has one cash-funded entry at walkStart and carries its actual
+  // allocation through every fold boundary, just like the selector's ledger.
+  const baselines: StrategyResult[] = BASELINE_IDS.map((id) => ({
+    id,
+    name: STRATEGIES.find((strategy) => strategy.id === id)!.name,
+    ...run(id, walkStart, holdoutStart),
+  }))
   folds.forEach((fold, index) => {
     const start = index * 12
     const end = Math.min(start + 12, walkForward.ledger.length)
     const initialEquity = start === 0 ? 1 : walkForward.ledger[start - 1].equity
     fold.testReturn = walkForward.ledger[end - 1].equity / initialEquity - 1
+    for (const baseline of baselines) {
+      const baselineInitial = start === 0 ? 1 : baseline.ledger[start - 1].equity
+      fold.baselineReturns[baseline.id as BaselineId] =
+        baseline.ledger[end - 1].equity / baselineInitial - 1
+    }
   })
   const finalSelection = choose(holdoutStart)
   const results = STRATEGIES.map(({ id, name }) => ({
@@ -492,13 +518,14 @@ export function evaluateLab(rows: readonly MonthlyRow[], config: LabConfig): Lab
     split: {
       warmupEnd: rows[WARMUP_MONTHS - 1].date,
       developmentStart: rows[WARMUP_MONTHS].date,
+      walkForwardStart: rows[walkStart].date,
       holdoutStart: rows[holdoutStart].date,
       holdoutEnd: rows[rows.length - 1].date,
       developmentMonths: holdoutStart - WARMUP_MONTHS,
       holdoutMonths: FINAL_MONTHS,
     },
     results,
-    walkForward: { ...walkForward, folds },
+    walkForward: { ...walkForward, folds, baselines },
     frozenSelection: {
       ...finalSelection,
       ...run(finalSelection.chosenId, holdoutStart, rows.length),
