@@ -6,6 +6,8 @@ The default dataset is generated synthetic data, not market history. Users can i
 
 The implementation has its own `LAB_VERSION`. A change to numerical behavior, rules, timing, selection, parsing, or uncertainty calculations requires a version change and updated checks. Atlas's model version remains a separate contract.
 
+The [downside-warning diagnostic](STRATEGY_RISK.md) is a separate derived analysis with version `risk-audit-1`. It reads the existing `lab-2` inputs and ledgers; its fixed loss-window definitions leave allocation rules, evaluation results, and the report schema unchanged. Use `npm run audit:risk -- report.json` to verify the input report and reproduce the diagnostic.
+
 ## Inputs and provenance
 
 Each row has a month, a market total return, and a cash total return. Returns are simple decimal returns: `0.02` means 2%; `-0.03` means -3%. Cash is a return-bearing sleeve, not an assumed zero-return balance or a bond index.

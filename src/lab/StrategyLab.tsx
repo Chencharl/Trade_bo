@@ -14,6 +14,7 @@ import { createDemoDataset, datasetCSV, importDataset } from './data'
 import type { Dataset } from './data'
 import { createLabReport } from './report'
 import type { BuildProvenance } from './report'
+import RiskAudit from './RiskAudit'
 import './lab.css'
 
 type Evaluation = ReturnType<typeof evaluateLab>
@@ -616,6 +617,9 @@ export default function StrategyLab() {
                 </small>
               </section>
             </div>
+            {dataset && (
+              <RiskAudit rows={dataset.rows} evaluation={result} datasetKind={dataset.kind} />
+            )}
             <section className="lab-selection">
               <div className="lab-section-heading">
                 <div>

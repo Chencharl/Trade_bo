@@ -16,7 +16,7 @@ Atlas and Strategy Lab work without an account. Their default data and assumptio
 
 ## What we are building toward
 
-A strategy research platform for testing investment methods against simple baselines with consistent data, explicit costs and risks, and reproducible results.
+A strategy research platform to investigate early signs of rising market risk and test whether exposure rules reduce severe losses, while measuring false alarms, missed declines, and foregone gains.
 
 The [product goal](docs/PRODUCT_GOAL.md) puts evaluator correctness, comparable benchmarks, and reproducibility before additional methods.
 
@@ -50,6 +50,7 @@ The [research desk guide](docs/RESEARCH_DESK.md) covers the optional Python back
 
 - [Atlas model](docs/ATLAS_MODEL.md)
 - [Strategy Lab calculations and data](docs/STRATEGY_LAB.md)
+- [Downside-warning research](docs/STRATEGY_RISK.md)
 - [Project comparison and roadmap](docs/STRATEGY_RESEARCH.md)
 - [Development and testing](CONTRIBUTING.md)
 - [Deployment workflow](.github/workflows/pages.yml)
