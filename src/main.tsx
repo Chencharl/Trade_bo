@@ -4,12 +4,14 @@ import { lazy, Suspense, useEffect, useState } from 'react'
 import Atlas from './atlas/Atlas'
 
 const ResearchDesk = lazy(() => import('./App'))
+const TimingTestPage = lazy(() => import('./lab/TimingTestPage'))
 const ExposureStudyPage = lazy(() => import('./lab/ExposureStudyPage'))
 const StrategyLab = lazy(() => import('./lab/StrategyLab'))
 const ReversalFilterStudy = lazy(() => import('./lab/ReversalFilterStudy'))
 const FullHistoryStudy = lazy(() => import('./lab/FullHistoryStudy'))
 const HistoricalReplay = lazy(() => import('./lab/HistoricalReplay'))
 const currentRoute = () =>
+  window.location.hash === '#lab-timing-test' ||
   window.location.hash === '#lab-exposure' ||
   window.location.hash === '#lab-reversal-filters' ||
   window.location.hash === '#lab-full-history' ||
@@ -95,6 +97,11 @@ function Root() {
   const historical = route.startsWith('#lab-history-')
   return (
     <>
+      {route === '#lab-timing-test' && (
+        <Suspense fallback={<p>Opening timing test…</p>}>
+          <TimingTestPage />
+        </Suspense>
+      )}
       {route === '#lab-exposure' && (
         <Suspense fallback={<p>Opening Strategy Lab…</p>}>
           <ExposureStudyPage />
