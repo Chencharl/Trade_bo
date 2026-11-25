@@ -70,3 +70,32 @@ test('cash-spell download retries with both account reports', async ({ page }) =
   await page.getByRole('button', { name: 'Retry' }).click()
   await expect(page.getByLabel('Choose an exit')).toBeVisible()
 })
+
+test('chart hit targets fit the phone before the resize observer delivers the new dimensions', async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    window.ResizeObserver = class extends ResizeObserver {
+      constructor(callback: ResizeObserverCallback) {
+        super((entries, observer) => {
+          if (innerWidth > 320) callback(entries, observer)
+        })
+      }
+    }
+  })
+  await page.goto(base + '#lab')
+  const chart = page.locator('.cash-plot')
+  await expect(chart.getByRole('button').first()).toBeVisible()
+  await page.waitForFunction(
+    () =>
+      Number(document.querySelector('.cash-plot svg')?.getAttribute('viewBox')?.split(' ')[2]) >
+      600,
+  )
+  await page.setViewportSize({ width: 320, height: 820 })
+  const right = await chart.evaluate((el) => el.getBoundingClientRect().right)
+  for (const rect of await chart
+    .getByRole('button')
+    .evaluateAll((els) => els.map((e) => e.getBoundingClientRect().right)))
+    expect(rect).toBeLessThanOrEqual(right + 1)
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(320)
+})

@@ -347,10 +347,10 @@ export default function SpyEquityChart({
               frame.current?.querySelectorAll<HTMLButtonElement>('.cash-hit')[j]?.focus()
             }}
             style={{
-              left: pos - barWidth / 2,
-              width: barWidth,
-              top: barTop,
-              height: barBottom - barTop,
+              left: (100 * (pos - barWidth / 2)) / width + '%',
+              width: (100 * barWidth) / width + '%',
+              top: (100 * barTop) / height + '%',
+              height: (100 * (barBottom - barTop)) / height + '%',
             }}
             aria-label={
               (isTrend(s) ? labels.trend : labels.model) +
