@@ -1,15 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import LabHeader from './LabHeader'
-import { HISTORY_HASH } from './crises'
-import './lab.css'
-import './month-view.css'
-import './historical.css'
-import './full-history.css'
+import HistoricalStudyPage, { type Text } from './HistoricalStudyPage'
 import type { ExposureId, ExposureStudy } from './exposureStudy'
-import './exposure.css'
-
-type Language = 'en' | 'zh'
-type Text = (en: string, zh: string) => string
 const file = './research/exposure-controls.json'
 const source =
   'https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/Data_Library/f-f_factors.html'
@@ -432,77 +423,14 @@ function Study({ r, t }: { r: ExposureStudy; t: Text }) {
     </>
   )
 }
+const valid = (r: ExposureStudy) => Boolean(r.chart?.length && r.folds?.length)
 export default function ExposureStudyPage() {
-  const [lang, setLang] = useState<Language>(() => {
-    try {
-      const saved = localStorage.getItem('tradebo-study-language')
-      if (saved === 'zh' || saved === 'en') return saved
-    } catch {
-      /* Storage is optional. */
-    }
-    return navigator.language.startsWith('zh') ? 'zh' : 'en'
-  })
-  const t: Text = (en, zh) => (lang === 'zh' ? zh : en)
-  const [r, setReport] = useState<ExposureStudy | null>(null),
-    [error, setError] = useState(false),
-    [attempt, retry] = useState(0)
-  useEffect(() => {
-    const c = new AbortController()
-    setError(false)
-    fetch(file, { signal: c.signal })
-      .then((res) => {
-        if (!res.ok) throw Error()
-        return res.json()
-      })
-      .then((d) => {
-        if (
-          d.version !== 'exposure-controls-1' ||
-          d.dataSha256 !== HISTORY_HASH ||
-          !d.chart?.length ||
-          !d.folds?.length
-        )
-          throw Error()
-        if (!c.signal.aborted) setReport(d)
-      })
-      .catch(() => {
-        if (!c.signal.aborted) setError(true)
-      })
-    return () => c.abort()
-  }, [attempt])
   return (
-    <div className="atlas-app lab-app" lang={lang === 'zh' ? 'zh-CN' : 'en'}>
-      <LabHeader />
-      <main className="lab-main xp">
-        <nav className="lab-history-links xp-nav" aria-label={t('Study navigation', '研究导航')}>
-          <a href="#lab">← Strategy Lab</a>
-          <a href="#lab-reversal-filters">{t('Reversal filter study', '反转与误报研究')}</a>
-          <button
-            className="xp-language"
-            onClick={() => {
-              const next = lang === 'en' ? 'zh' : 'en'
-              setLang(next)
-              try {
-                localStorage.setItem('tradebo-study-language', next)
-              } catch {
-                /* Storage is optional. */
-              }
-            }}
-            lang={lang === 'en' ? 'zh-CN' : 'en'}
-          >
-            {lang === 'en' ? '中文' : 'English'}
-          </button>
-        </nav>
-        {r ? (
-          <Study r={r} t={t} />
-        ) : error ? (
-          <div role="alert">
-            <p>{t('Couldn’t load the study.', '研究数据载入失败。')}</p>
-            <button onClick={() => retry((n) => n + 1)}>{t('Retry', '重试')}</button>
-          </div>
-        ) : (
-          <p role="status">{t('Loading study…', '正在加载研究…')}</p>
-        )}
-      </main>
-    </div>
+    <HistoricalStudyPage
+      file={file}
+      version="exposure-controls-1"
+      valid={valid}
+      render={(r, t) => <Study r={r} t={t} />}
+    />
   )
 }

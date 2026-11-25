@@ -26,6 +26,8 @@ Dates are August 1937 through September 2026. The 314 rebound months are labeled
 
 [![Stock exposure and timing in Strategy Lab](exposure-study.png)](https://chencharl.github.io/Trade_bo/#lab-exposure)
 
+Test how often the residual occurs under [10,000 matched random trade schedules](STRATEGY_TIMING_TEST.md).
+
 ## Reproduction
 
 Use the September 2026 snapshot from the [archived CSV](https://raw.githubusercontent.com/callumtoc/stat40920-group-project/e6878880db0e5a2aea34787f30a34b8a778ed133/data/raw/F-F_Research_Data_Factors.csv). The [Kenneth French Data Library](https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/Data_Library/f-f_factors.html) documents the U.S. market and risk-free inputs. The exhibit uses their monthly stock market total return (market excess return plus the risk-free rate) and monthly risk-free return. Simulated fills use month-boundary targets with no intramonth price information. The revised historical snapshot cannot establish what a trader's contemporary data release showed.

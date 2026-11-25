@@ -1,0 +1,72 @@
+.timing-hist {
+  margin: 16px 9px 8px;
+  font-variant-numeric: tabular-nums;
+}
+.timing-key,
+.timing-axis {
+  display: flex;
+  align-items: center;
+  gap: 10px 20px;
+  flex-wrap: wrap;
+  font-size: 13px;
+}
+.timing-key span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.timing-key i {
+  height: 13px;
+  border-left: 3px solid var(--lab-blue);
+}
+.timing-key span + span i {
+  border-left: 2px dashed #475e75;
+}
+.timing-bars {
+  height: 126px;
+  display: flex;
+  align-items: flex-end;
+  gap: 1px;
+  position: relative;
+  margin-top: 12px;
+  border-bottom: 1px solid #9dafc0;
+  background: linear-gradient(to top, #eef3f8 1px, transparent 1px) bottom/100% 33.33%;
+}
+.timing-bars span {
+  flex: 1;
+  background: #9eb1c7;
+}
+.timing-bars i {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  transform: translateX(-50%);
+}
+.timing-observed {
+  border-left: 3px solid var(--lab-blue);
+}
+.timing-median {
+  border-left: 2px dashed #475e75;
+}
+.timing-axis {
+  justify-content: space-between;
+  color: var(--lab-muted);
+  margin: 4px 0 8px;
+}
+.timing-hist figcaption {
+  font-size: 13px;
+}
+.xp-chart-top select {
+  max-width: 100%;
+}
+@media (max-width: 620px) {
+  .timing-hist {
+    margin-inline: 3px;
+  }
+  .xp-chart-top label {
+    max-width: 100%;
+  }
+  .timing-key {
+    gap: 5px 14px;
+  }
+}

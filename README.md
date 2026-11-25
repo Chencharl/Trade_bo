@@ -6,7 +6,7 @@ A personal project by [Chen Yang](https://github.com/Chencharl).
 
 [**Open Atlas**](https://chencharl.github.io/Trade_bo/) · [**Open Strategy Lab**](https://chencharl.github.io/Trade_bo/#lab) · [Research roadmap](docs/STRATEGY_RESEARCH.md)
 
-[Stock exposure and timing](https://chencharl.github.io/Trade_bo/#lab-exposure) compares trend-filtered reversal with a fixed stock allocation based on the preceding ten years. [Method and results](docs/STRATEGY_EXPOSURE.md)
+[Stock exposure and timing](https://chencharl.github.io/Trade_bo/#lab-exposure) compares trend-filtered reversal with a fixed stock allocation based on the preceding ten years. [Method and results](docs/STRATEGY_EXPOSURE.md) · [Timing vs 10,000 random schedules](https://chencharl.github.io/Trade_bo/#lab-timing-test)
 
 ## What we have built
 
