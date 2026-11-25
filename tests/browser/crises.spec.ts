@@ -10,7 +10,7 @@ test('historical entry carries rule and fee, offers local recovery, and preserve
     requests++
     return route.fulfill({ status: 503, body: '' })
   })
-  await page.goto('/#lab')
+  await page.goto('/#lab-workbench')
   await page.getByRole('button', { name: 'Inspect Cash', exact: true }).click()
   await page.getByRole('slider', { name: /One-way trading cost/ }).press('End')
   await page.getByRole('link', { name: /2008 financial crisis/i }).click()
@@ -26,6 +26,7 @@ test('historical entry carries rule and fee, offers local recovery, and preserve
   await expect(page.getByRole('alert')).toBeVisible()
   await expect(page.getByRole('region', { name: 'Selected month evidence' })).toHaveCount(0)
   await page.getByRole('link', { name: '← Strategy Lab' }).click()
+  await page.getByRole('link', { name: /Monthly workbench/ }).click()
   await expect(page.getByRole('slider', { name: /One-way trading cost/ })).toHaveValue('100')
 })
 

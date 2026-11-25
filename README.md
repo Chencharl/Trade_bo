@@ -6,15 +6,15 @@ A personal project by [Chen Yang](https://github.com/Chencharl).
 
 [**Open Atlas**](https://chencharl.github.io/Trade_bo/) · [**Open Strategy Lab**](https://chencharl.github.io/Trade_bo/#lab) · [Research roadmap](docs/STRATEGY_RESEARCH.md)
 
-[Stock exposure and timing](https://chencharl.github.io/Trade_bo/#lab-exposure) compares trend-filtered reversal with a fixed stock allocation based on the preceding ten years. [Method and results](docs/STRATEGY_EXPOSURE.md) · [Timing vs 10,000 random schedules](https://chencharl.github.io/Trade_bo/#lab-timing-test)
+[SPY next-open backtest](https://chencharl.github.io/Trade_bo/#lab) compares a frozen neural network with original reversal, trend-filtered reversal and buy-and-hold on daily ETF prices. Inspect the equity curves and individual fills. [Protocol and results](docs/STRATEGY_SPY_DAILY.md)
 
 ## What we have built
 
 - **Atlas:** a browser-based portfolio simulator for comparing allocations and market scenarios.
-- **Strategy Lab:** a browser-based tool for evaluating eight monthly market/cash rules, including trading costs, risk metrics, and walk-forward selection. It supports local data imports and research exports.
+- **Strategy Lab:** SPY holdout results, historical studies and a [monthly workbench](https://chencharl.github.io/Trade_bo/#lab-workbench) for testing eight rules on local data.
 - **Research desk:** a local Python-backed workspace for reviewing holdings, company information, and paper trade plans.
 
-Atlas and Strategy Lab work without an account. Their default data and assumptions are illustrative; Strategy Lab can also evaluate imported return histories. The project does not execute trades.
+Atlas and Strategy Lab work without an account. The Strategy Lab homepage shows a historical ETF backtest. Atlas simulations and the monthly workbench example use illustrative assumptions. The project does not execute trades.
 
 ## What we are building toward
 
@@ -31,7 +31,7 @@ The [product goal](docs/PRODUCT_GOAL.md) puts evaluator correctness, comparable 
 
 ### Strategy Lab
 
-![Strategy Lab using synthetic teaching data](docs/strategy-lab-preview.png)
+![Strategy Lab SPY holdout results](docs/spy-daily.png)
 
 </details>
 

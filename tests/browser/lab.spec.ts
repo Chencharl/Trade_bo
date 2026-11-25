@@ -88,6 +88,7 @@ test('Strategy Lab is directly accessible, discoverable from Atlas, and exports 
     if (request.url().includes('/api/')) apiRequests.push(request.url())
   })
   await page.goto('/#lab')
+  await page.getByRole('link', { name: /Monthly workbench/ }).click()
   await ready(page)
   await expect(page.getByRole('heading', { name: 'Strategy Lab' })).toBeVisible()
   await expect(page.getByText('SYNTHETIC TEACHING DATA', { exact: true })).toBeVisible()
@@ -122,6 +123,7 @@ test('Strategy Lab is directly accessible, discoverable from Atlas, and exports 
     .getByRole('navigation', { name: 'Atlas navigation' })
     .getByRole('link', { name: 'Strategy lab', exact: true })
     .click()
+  await page.getByRole('link', { name: /Monthly workbench/ }).click()
   await ready(page)
   expect(apiRequests).toEqual([])
   expect(errors).toEqual([])
@@ -130,7 +132,7 @@ test('Strategy Lab is directly accessible, discoverable from Atlas, and exports 
 test('cash keeps undefined excess Sharpe and cost-invariant returns; Market has zero paired difference', async ({
   page,
 }) => {
-  await page.goto('/#lab')
+  await page.goto('/#lab-workbench')
   await ready(page)
   await page.getByRole('button', { name: 'Inspect Cash', exact: true }).click()
   await ready(page)
@@ -165,7 +167,7 @@ test('synthetic CSV round trip preserves its hash, header downloads work, and na
 }) => {
   const errors: string[] = []
   page.on('pageerror', (error) => errors.push(error.message))
-  await page.goto('/#lab')
+  await page.goto('/#lab-workbench')
   await ready(page)
   const original = await report(page)
   await sourceDetails(page, 'Synthetic round-trip fixture; illustrative units; version 1')
@@ -207,6 +209,7 @@ test('synthetic CSV round trip preserves its hash, header downloads work, and na
     .getByRole('navigation', { name: 'Atlas navigation' })
     .getByRole('link', { name: 'Strategy lab', exact: true })
     .click()
+  await page.getByRole('link', { name: /Monthly workbench/ }).click()
   await ready(page)
   const restored = await report(page)
   expect(restored.dataset).toEqual(beforeNavigation.dataset)
@@ -221,7 +224,7 @@ test('synthetic CSV round trip preserves its hash, header downloads work, and na
 test('local French-format CSV and ZIP fixtures convert percentages and exclude annual rows without network calls', async ({
   page,
 }) => {
-  await page.goto('/#lab')
+  await page.goto('/#lab-workbench')
   await ready(page)
   const requests: string[] = []
   page.on('request', (request) => requests.push(request.url()))
@@ -260,7 +263,7 @@ test('local French-format CSV and ZIP fixtures convert percentages and exclude a
 test('invalid monthly files explain the gap and preserve the previous dataset until a valid import', async ({
   page,
 }) => {
-  await page.goto('/#lab')
+  await page.goto('/#lab-workbench')
   await ready(page)
   const before = await report(page)
   await sourceDetails(page)
@@ -282,7 +285,7 @@ test('invalid monthly files explain the gap and preserve the previous dataset un
 test('numeric-range failure cannot display or export an old dataset result under a new file', async ({
   page,
 }) => {
-  await page.goto('/#lab')
+  await page.goto('/#lab-workbench')
   await ready(page)
   await sourceDetails(page, 'Synthetic overflow stress fixture; not historical returns')
   await upload(page, 'overflow-test.csv', Buffer.from(canonicalCSV(1500, 10, 0)))
@@ -304,7 +307,7 @@ test('blocked Workers use an identical local fallback and remain interactive', a
   page,
   context,
 }) => {
-  await page.goto('/#lab')
+  await page.goto('/#lab-workbench')
   await ready(page)
   const baseline = await report(page)
   const fallbackPage = await context.newPage()
@@ -320,7 +323,7 @@ test('blocked Workers use an identical local fallback and remain interactive', a
       },
     })
   })
-  await fallbackPage.goto('/#lab')
+  await fallbackPage.goto('/#lab-workbench')
   await ready(fallbackPage)
   const fallback = await report(fallbackPage)
   expect(fallback.dataset).toEqual(baseline.dataset)
@@ -376,7 +379,7 @@ test('pending evaluations hide stale evidence and ignore delayed results from ob
       },
     })
   })
-  await page.goto('/#lab')
+  await page.goto('/#lab-workbench')
   await ready(page)
   await page.evaluate(() => {
     ;(window as typeof window & { holdLabResults: boolean }).holdLabResults = true
@@ -426,6 +429,7 @@ test('320-pixel layout and expanded evidence tables support keyboard access and 
   const entry = page.getByRole('link', { name: /Explore Strategy Lab/ })
   await expect(entry).toBeVisible()
   await entry.click()
+  await page.getByRole('link', { name: /Monthly workbench/ }).click()
   await ready(page)
   await page.evaluate(() => document.fonts.ready)
   const noOverflow = () => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)
@@ -450,7 +454,7 @@ test('320-pixel layout and expanded evidence tables support keyboard access and 
 test('selector baselines display the exported dates and metrics and the downloaded report recomputes', async ({
   page,
 }) => {
-  await page.goto('/#lab')
+  await page.goto('/#lab-workbench')
   await ready(page)
   const exported = await report(page)
   expect((await verifyLabReport(exported)).calculationMatches).toBe(true)
@@ -489,7 +493,7 @@ test('selector baselines display the exported dates and metrics and the download
 test('declining input abstains in Cash and reports the actual partial-fold test coverage', async ({
   page,
 }) => {
-  await page.goto('/#lab')
+  await page.goto('/#lab-workbench')
   await ready(page)
   await sourceDetails(page, 'Generated declining market; no historical claims')
   await upload(page, 'declining-fixture.csv', Buffer.from(canonicalCSV(157, -0.01, 0)))
@@ -517,7 +521,7 @@ test('declining input abstains in Cash and reports the actual partial-fold test 
 test('switching rules exposes same-month differences against the previous rule and reconciles both ledgers', async ({
   page,
 }) => {
-  await page.goto('/#lab')
+  await page.goto('/#lab-workbench')
   await ready(page)
   const panel = page.getByRole('region', { name: 'Monthly strategy comparison' })
   const comparison = panel.getByLabel('Comparison strategy')

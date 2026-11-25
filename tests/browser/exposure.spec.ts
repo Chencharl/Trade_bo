@@ -89,7 +89,7 @@ test('an unavailable overview can be retried without losing access to the workbe
 test('workbench distinguishes monthly returns, cash months and an overlapping market benchmark', async ({
   page,
 }) => {
-  await page.goto(base + '#lab')
+  await page.goto(base + '#lab-workbench')
   await expect(page.locator('.lab-plot-note')).toContainText('29 of 60 months')
   const line = page.locator('.lab-strategy-line'),
     initial = await line.getAttribute('d')
