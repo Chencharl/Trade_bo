@@ -1295,3 +1295,27 @@
     font-size: 11px;
   }
 }
+
+.lab-plot-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  padding: 5px 0;
+}
+.lab-plot-options button {
+  padding: 6px 10px;
+  color: #233957;
+  background: #fff;
+  border: 1px solid #b8c6d7;
+  border-radius: 3px;
+  font-size: 13px;
+}
+.lab-plot-options button[aria-pressed='true'] {
+  color: white;
+  background: #253f73;
+}
+.lab-plot-note {
+  color: #425471;
+  font-size: 13px;
+  margin-top: 0;
+}
