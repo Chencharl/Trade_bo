@@ -1,21 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
-import {
-  ArrowLeft,
-  ArrowUpRight,
-  Download,
-  FlaskConical,
-  Github,
-  Layers3,
-  Upload,
-} from 'lucide-react'
+import { ArrowLeft, ArrowUpRight, Download, Github, Layers3, Upload } from 'lucide-react'
 import { DEFAULT_LAB_CONFIG, evaluateLab, LAB_VERSION, STRATEGIES } from './engine'
-import type { LabConfig } from './engine'
+import MonthComparison from './MonthComparison'
+import type { LabConfig, StrategyId } from './engine'
 import { createDemoDataset, datasetCSV, importDataset } from './data'
 import type { Dataset } from './data'
 import { createLabReport } from './report'
 import type { BuildProvenance } from './report'
 import RiskAudit from './RiskAudit'
 import './lab.css'
+import './month-view.css'
 
 type Evaluation = ReturnType<typeof evaluateLab>
 type Run = Evaluation['results'][number]
@@ -113,6 +107,12 @@ function EquityChart({ selected, benchmark }: { selected: Run; benchmark: Run })
 export default function StrategyLab() {
   const [dataset, setDataset] = useState<Dataset | null>(null)
   const [config, setConfig] = useState<LabConfig>({ ...DEFAULT_LAB_CONFIG })
+  const [comparison, setComparison] = useState<StrategyId>('market')
+  function inspectStrategy(next: StrategyId) {
+    if (next === config.selectedStrategy) return
+    setComparison(config.selectedStrategy)
+    setConfig((current) => ({ ...current, selectedStrategy: next }))
+  }
   const [completed, setCompleted] = useState<{ key: string; value: Evaluation } | null>(null)
   const [busy, setBusy] = useState(true)
   const [importing, setImporting] = useState(false)
@@ -247,7 +247,42 @@ export default function StrategyLab() {
   }
   const selected = result?.results.find((run) => run.id === config.selectedStrategy)
   const benchmark = result?.results.find((run) => run.id === 'market')
+  const reference = result?.results.find((run) => run.id === comparison)
   const selectedRule = STRATEGIES.find((rule) => rule.id === config.selectedStrategy)!
+  function exportComparison() {
+    if (!dataset || !result || !selected || !reference || busy || importing || error) return
+    const header =
+      'month,data_kind,data_sha256,engine,one_way_cost_bps,reference,strategy,reference_drawdown_pct,strategy_drawdown_pct,drawdown_change_pp,reference_cost_bp,strategy_cost_bp,cost_change_bp,reference_exposure_pct,strategy_exposure_pct,reference_turnover_pct,strategy_turnover_pct,reference_net_return_pct,strategy_net_return_pct'
+    const rows = selected.ledger.map((r, i) => {
+      const b = reference.ledger[i]
+      return [
+        r.date,
+        dataset.kind,
+        dataset.dataSha256,
+        result.version,
+        config.costBps,
+        reference.id,
+        selected.id,
+        b.drawdown * 100,
+        r.drawdown * 100,
+        (r.drawdown - b.drawdown) * 100,
+        b.costFraction * 10000,
+        r.costFraction * 10000,
+        (r.costFraction - b.costFraction) * 10000,
+        b.targetWeight * 100,
+        r.targetWeight * 100,
+        b.turnover * 100,
+        r.turnover * 100,
+        b.netReturn * 100,
+        r.netReturn * 100,
+      ].join(',')
+    })
+    download(
+      'tradebo-' + selected.id + '-vs-' + reference.id + '.csv',
+      [header, ...rows].join('\n') + '\n',
+      'text/csv',
+    )
+  }
   return (
     <div className="atlas-app lab-app">
       <a className="atlas-skip" href="#lab-main">
@@ -276,26 +311,10 @@ export default function StrategyLab() {
         </nav>
       </header>
       <main id="lab-main" className="lab-main">
-        <section className="lab-intro">
-          <div>
-            <span className="lab-kicker">
-              <FlaskConical size={14} /> STRATEGY LAB · {LAB_VERSION}
-            </span>
-            <h1>
-              Test the rule.
-              <br />
-              <span>Show the evidence.</span>
-            </h1>
-          </div>
-          <div className="lab-intro-note">
-            <p>
-              Five strategy families. Three baselines.
-              <br />
-              One shared test of timing, cost, and risk.
-            </p>
-            <span>LOCAL FILES · REPRODUCIBLE RUNS · NO ACCOUNT</span>
-          </div>
-        </section>
+        <div className="lab-mast">
+          <h1>Strategy Lab</h1>
+          <p>Monthly equity &amp; cash strategies</p>
+        </div>
         <section className="lab-data" aria-label="Data source">
           <div className="lab-data-summary">
             <span className={`lab-source-tag ${dataset?.kind === 'imported' ? 'imported' : ''}`}>
@@ -310,7 +329,7 @@ export default function StrategyLab() {
             <p className="lab-data-note">
               {dataset?.kind === 'imported'
                 ? 'Revised history can differ from what was known at the time. This is a monthly index replay, not actual trade fills.'
-                : 'Generated regimes, not historical returns. Open your own file to evaluate market history.'}
+                : 'Generated monthly returns. Import a file to study market history.'}
             </p>
           </div>
           <div className="lab-data-actions">
@@ -385,57 +404,35 @@ export default function StrategyLab() {
             {notice}
           </p>
         )}
-        <section className="lab-split" aria-label="Evaluation timeline">
-          <div className="lab-section-heading">
-            <h2>Keep the future out of selection.</h2>
-            <span>24 MONTHS WARM-UP · FINAL 60 MONTHS RESERVED</span>
-          </div>
-          <div className="lab-timeline">
-            <div className="warmup" style={{ flex: 24 }} />
-            <div
-              className="development"
-              style={{ flex: Math.max(1, (dataset?.rows.length || 432) - 84) }}
-            />
-            <div className="reserved" style={{ flex: 60 }} />
-          </div>
-          <div className="lab-timeline-labels">
-            <span>
-              <i className="development" />
-              Expanding training → next-year tests
-            </span>
-            <span>
-              <i className="reserved" />
-              {result
-                ? `${month(result.split.holdoutStart)} — ${month(result.split.holdoutEnd)}`
-                : 'Final 60 months'}{' '}
-              · reserved evaluation
-            </span>
-          </div>
-          <p>
-            The automatic selector never uses the final window to choose its rule. Viewing or tuning
-            against it makes the research exploratory; a historical split cannot establish future
-            performance.
-          </p>
-        </section>
         <div className="lab-workspace" aria-busy={busy}>
           <aside className="lab-rules" aria-label="Strategy controls">
-            <span className="lab-kicker">CHOOSE A RULE TO INSPECT</span>
+            <label className="lab-mobile-strategy">
+              Strategy
+              <select
+                aria-label="Inspect strategy"
+                value={config.selectedStrategy}
+                onChange={(e) => inspectStrategy(e.target.value as StrategyId)}
+              >
+                {STRATEGIES.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <span className="lab-kicker">Strategy</span>
             <div className="lab-rule-buttons">
               {STRATEGIES.map((rule) => (
                 <button
                   key={rule.id}
                   aria-pressed={config.selectedStrategy === rule.id}
                   aria-label={`Inspect ${rule.name}`}
-                  onClick={() =>
-                    setConfig((current) => ({ ...current, selectedStrategy: rule.id }))
-                  }
+                  onClick={() => inspectStrategy(rule.id)}
                 >
                   <span className="lab-rule-dot" />
                   <span>
                     <b>{rule.name}</b>
-                    <small>{rule.family}</small>
                   </span>
-                  <ArrowUpRight size={14} />
                 </button>
               ))}
             </div>
@@ -461,10 +458,19 @@ export default function StrategyLab() {
             </div>
           </aside>
           <section className="lab-results" aria-label="Strategy evaluation" aria-busy={busy}>
+            {result && selected && reference && (
+              <MonthComparison
+                current={selected}
+                reference={reference}
+                choices={result.results}
+                onReference={setComparison}
+                onExport={dataset && !busy && !importing && !error ? exportComparison : undefined}
+              />
+            )}
             <div className="lab-chart-heading">
               <div>
                 <span className="lab-kicker">RESERVED WINDOW · NET OF COSTS</span>
-                <h2>100 units. The same starting line.</h2>
+                <h2>Portfolio value from 100</h2>
               </div>
               <span className="lab-run-state">
                 {busy ? 'Evaluating…' : result ? 'Replay complete' : 'Evaluation unavailable'}
@@ -525,8 +531,8 @@ export default function StrategyLab() {
           <>
             <section className="lab-comparison">
               <div className="lab-section-heading">
-                <h2>Every rule. The same window.</h2>
-                <span>FIXED RULES · NO PARAMETER SWEEP</span>
+                <h2>Strategy returns and risk</h2>
+                <span>FINAL 60 MONTHS</span>
               </div>
               <div
                 className="lab-table-wrap"
@@ -575,8 +581,7 @@ export default function StrategyLab() {
             </section>
             <div className="lab-diagnostics">
               <section className="lab-diagnostic">
-                <span className="lab-kicker">THE PRICE OF TRADING</span>
-                <h2>Does the result survive costs?</h2>
+                <h2>Trading cost sensitivity</h2>
                 <p>{selectedRule.name} stays fixed as costs change.</p>
                 <div className="lab-cost-bars">
                   {result.costSensitivity.map((row) => (
@@ -600,8 +605,7 @@ export default function StrategyLab() {
                 </small>
               </section>
               <section className="lab-diagnostic">
-                <span className="lab-kicker">UNCERTAINTY, WITH ITS LIMITS</span>
-                <h2>One history is a small sample.</h2>
+                <h2>Return difference vs. Market</h2>
                 <p>{selectedRule.name}: annualized mean return difference versus the market:</p>
                 <div className="lab-interval">
                   <strong>{pp(result.uncertainty.estimate)}</strong>
@@ -620,11 +624,42 @@ export default function StrategyLab() {
             {dataset && (
               <RiskAudit rows={dataset.rows} evaluation={result} datasetKind={dataset.kind} />
             )}
+            <section className="lab-split" aria-label="Evaluation timeline">
+              <div className="lab-section-heading">
+                <h2>Evaluation periods</h2>
+                <span>24 MONTHS WARM-UP · FINAL 60 MONTHS RESERVED</span>
+              </div>
+              <div className="lab-timeline">
+                <div className="warmup" style={{ flex: 24 }} />
+                <div
+                  className="development"
+                  style={{ flex: Math.max(1, (dataset?.rows.length || 432) - 84) }}
+                />
+                <div className="reserved" style={{ flex: 60 }} />
+              </div>
+              <div className="lab-timeline-labels">
+                <span>
+                  <i className="development" />
+                  Expanding training → next-year tests
+                </span>
+                <span>
+                  <i className="reserved" />
+                  {result
+                    ? `${month(result.split.holdoutStart)} — ${month(result.split.holdoutEnd)}`
+                    : 'Final 60 months'}{' '}
+                  · reserved evaluation
+                </span>
+              </div>
+              <p>
+                The automatic selector never uses the final window to choose its rule. Viewing or
+                tuning against it makes the research exploratory; a historical split cannot
+                establish future performance.
+              </p>
+            </section>
             <section className="lab-selection">
               <div className="lab-section-heading">
                 <div>
-                  <span className="lab-kicker">AUDIT THE SELECTION</span>
-                  <h2>Winning the past is only the first step.</h2>
+                  <h2>Walk-forward selection</h2>
                 </div>
                 <span>
                   {result.walkForward.ledger.length} TEST MONTHS · {result.walkForward.folds.length}{' '}
@@ -656,12 +691,7 @@ export default function StrategyLab() {
                   )}
                   <button
                     className="lab-inspect-winner"
-                    onClick={() =>
-                      setConfig((current) => ({
-                        ...current,
-                        selectedStrategy: result.frozenSelection.chosenId,
-                      }))
-                    }
+                    onClick={() => inspectStrategy(result.frozenSelection.chosenId)}
                   >
                     Inspect the frozen rule
                   </button>
@@ -673,7 +703,7 @@ export default function StrategyLab() {
                 none has a positive, defined score. Its ledger carries actual holdings across
                 switches. This selection policy does not establish an investment edge.
               </p>
-              <h3>Selection and baselines, on matching dates.</h3>
+              <h3>Selection and baselines</h3>
               <div
                 className="lab-table-wrap"
                 tabIndex={0}
@@ -858,8 +888,7 @@ export default function StrategyLab() {
         )}
         <section className="lab-takeaway">
           <div>
-            <span className="lab-kicker">KEEP THE EXPERIMENT REPRODUCIBLE</span>
-            <h2>Take the evidence with you.</h2>
+            <h2>Research export</h2>
             <p>Export the source hashes, data, rules, windows, and every monthly position.</p>
             <p className="lab-footnote">
               Recompute a saved report locally with{' '}
@@ -874,17 +903,6 @@ export default function StrategyLab() {
             <Download size={16} />
             Export research run
           </button>
-        </section>
-        <section className="lab-references">
-          <h2>Learn broadly. Test precisely.</h2>
-          <p>
-            Design lessons from LEAN, Backtrader, vectorbt, backtesting.py, Freqtrade, Qlib, FinRL,
-            Zipline, skfolio, and PyPortfolioOpt. The survey records what we adopted, what needs
-            more evidence, and where licensing differs.
-          </p>
-          <a href={`${REPO}/blob/main/docs/STRATEGY_RESEARCH.md`} target="_blank" rel="noreferrer">
-            Read the project comparison & research roadmap <ArrowUpRight size={14} />
-          </a>
         </section>
       </main>
       <footer className="lab-footer">

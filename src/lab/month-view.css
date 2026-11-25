@@ -1,0 +1,392 @@
+.lab-app .lab-header {
+  height: 62px;
+}
+.lab-mast {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  padding: 22px 0 16px;
+}
+.lab-mast h1 {
+  font:
+    500 clamp(30px, 4vw, 48px)/1.05 'Space Grotesk',
+    sans-serif;
+  letter-spacing: -0.045em;
+  margin: 0;
+}
+.lab-mast p {
+  color: #52657b;
+  font-size: 14px;
+  margin: 0;
+}
+.lab-main .lab-data {
+  padding: 14px 20px;
+  gap: 12px;
+  margin: 0 0 18px;
+  border-radius: 5px;
+  background: #f1f5f8;
+}
+.lab-data .lab-data-summary h2 {
+  font-size: 18px;
+  margin: 6px 0 2px;
+}
+.lab-data .lab-data-summary .lab-data-note {
+  margin: 3px 0 0;
+}
+.lab-rules .lab-kicker {
+  font:
+    600 15px 'DM Sans',
+    sans-serif;
+  letter-spacing: 0;
+}
+.lab-rules .lab-rule-buttons button {
+  min-height: 38px;
+}
+.lab-rules .lab-rule-buttons b {
+  font-size: 13px;
+}
+.lab-workspace .lab-results {
+  padding-top: 20px;
+}
+.month-view {
+  --ink: #20324b;
+  --low: #216e65;
+  --high: #9b4c27;
+  color: var(--ink);
+  margin-bottom: 25px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #c7d3df;
+  font:
+    14px 'DM Sans',
+    sans-serif;
+}
+.month-title,
+.month-pair,
+.month-pair label,
+.month-key {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+}
+.month-title {
+  justify-content: space-between;
+}
+.month-title h2 {
+  font:
+    500 clamp(23px, 2.5vw, 34px)/1.13 'Space Grotesk',
+    sans-serif;
+  letter-spacing: -0.04em;
+  margin: 0;
+}
+.month-title > span,
+.month-year,
+.month-name,
+.month-peaks b,
+.month-detail td {
+  font-family: 'IBM Plex Mono', monospace;
+  font-variant-numeric: tabular-nums;
+}
+.month-title > span {
+  font-size: 11px;
+  color: #52657b;
+}
+.month-pair {
+  margin: 12px 0 16px;
+  gap: 5px 9px;
+}
+.month-pair label {
+  color: #52657b;
+  font-size: 13px;
+}
+.month-pair select {
+  max-width: 100%;
+  padding: 5px 22px 5px 8px;
+  border: 1px solid #a2b4c3;
+  background: #fff;
+  color: var(--ink);
+  border-radius: 4px;
+  font: inherit;
+}
+.month-peaks {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.month-peaks button {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 3px 8px;
+  text-align: left;
+  padding: 7px 10px;
+  border: 1px solid #ccd8e0;
+  background: #f4f7f9;
+  color: var(--ink);
+  border-radius: 4px;
+  cursor: pointer;
+}
+.month-peaks button:hover:not(:disabled) {
+  border-color: #536f80;
+}
+.month-peaks button:disabled {
+  cursor: default;
+}
+.month-peaks span {
+  font-size: 12px;
+}
+.month-peaks strong,
+.month-peaks b {
+  font-size: 12px;
+  font-weight: 600;
+}
+.month-key {
+  justify-content: flex-end;
+  margin: 13px 0 3px;
+  color: #52657b;
+  font-size: 11px;
+}
+.mk-higher {
+  color: var(--high);
+}
+.mk-lower {
+  color: var(--low);
+}
+.month-scroll {
+  overflow-x: auto;
+  padding: 3px;
+  scrollbar-width: thin;
+}
+.month-matrix {
+  display: grid;
+  grid-template-columns: 45px repeat(12, minmax(29px, 1fr));
+  gap: 3px;
+  min-width: 440px;
+  align-items: stretch;
+}
+.month-name {
+  text-align: center;
+  font-size: 10px;
+  color: #52657b;
+  padding: 4px 0;
+}
+.month-matrix + .month-matrix {
+  margin-top: 3px;
+}
+.month-year {
+  font-size: 9px;
+  display: grid;
+  grid-template-columns: auto auto;
+  align-items: center;
+  align-content: center;
+  line-height: 14px;
+  color: #506078;
+}
+.month-year b {
+  grid-row: span 2;
+  font-size: 10px;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  justify-self: start;
+}
+.month-matrix button {
+  font:
+    11px/1 'IBM Plex Mono',
+    monospace;
+  min-height: 32px;
+  cursor: pointer;
+  background: #f0f4f6;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  display: grid;
+  gap: 1px;
+  align-content: center;
+  padding: 2px;
+}
+.month-matrix button:hover {
+  background: #e1e9ed;
+}
+.month-matrix button[aria-pressed='true'] {
+  border-color: var(--ink);
+  background: #fff;
+  box-shadow: inset 0 0 0 1px var(--ink);
+}
+.month-mark {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  height: 13px;
+}
+.month-mark.higher {
+  color: var(--high);
+}
+.month-mark.lower {
+  color: var(--low);
+}
+.month-mark.same {
+  color: #52657b;
+}
+.month-mark i {
+  height: 4px;
+  border-radius: 1px;
+  background: currentColor;
+}
+.month-caption {
+  font-size: 11px;
+  line-height: 1.5;
+  color: #52657b;
+  margin: 6px 0 12px;
+}
+.month-detail {
+  background: #f4f7f9;
+  border-left: 3px solid #40586e;
+  padding: 10px 14px;
+}
+.month-detail h3 {
+  font:
+    600 16px 'Space Grotesk',
+    sans-serif;
+  margin: 0 0 6px;
+}
+.month-detail table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 12px;
+  table-layout: fixed;
+}
+.month-detail th,
+.month-detail td {
+  padding: 4px 2px;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+.month-detail thead th {
+  border-bottom: 1px solid #ccd8e0;
+  font-weight: 600;
+}
+.month-detail th:first-child {
+  text-align: left;
+  width: 34%;
+}
+.month-detail tbody th {
+  font-weight: 400;
+}
+.month-view :focus-visible {
+  outline: 2px solid #244eb2;
+  outline-offset: 1px;
+}
+@media (max-width: 620px) {
+  .lab-main .lab-data {
+    padding: 12px;
+    gap: 8px;
+  }
+  .lab-mast {
+    padding-top: 16px;
+  }
+  .lab-rules .lab-rule-buttons button {
+    min-height: 32px;
+    padding: 4px;
+  }
+  .lab-rules .lab-rule-buttons b {
+    font-size: 12px;
+  }
+  .lab-workspace .lab-rules {
+    margin-bottom: 10px;
+    padding: 10px 12px;
+  }
+  .lab-rules .lab-cost-control {
+    margin-top: 6px;
+    padding-top: 8px;
+  }
+  .month-detail {
+    padding: 8px;
+  }
+  .month-detail table {
+    font-size: 11px;
+  }
+  .month-title > span {
+    width: 100%;
+  }
+  .month-key {
+    justify-content: flex-start;
+  }
+}
+.month-detail table {
+  white-space: normal;
+}
+.month-detail td {
+  padding: 5px 2px;
+}
+.month-detail thead th {
+  line-height: 1.3;
+  padding: 6px 2px;
+}
+.month-mark i {
+  min-width: 2px;
+}
+.lab-mobile-strategy {
+  display: none;
+}
+@media (max-width: 620px) {
+  .lab-rules .lab-rule-buttons,
+  .lab-rules > .lab-kicker {
+    display: none;
+  }
+  .lab-mobile-strategy {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    font:
+      600 14px 'DM Sans',
+      sans-serif;
+  }
+  .lab-mobile-strategy select {
+    min-width: 0;
+    max-width: 70%;
+    padding: 8px 4px;
+    border: 1px solid #a2b4c3;
+    border-radius: 4px;
+    background: #fff;
+    color: #20324b;
+    font: inherit;
+  }
+  .month-detail th:first-child {
+    width: 30%;
+  }
+  .month-year {
+    position: sticky;
+    left: 0;
+    background: #fff;
+    z-index: 1;
+  }
+  .month-scroll {
+    border-right: 1px solid #dce3e8;
+  }
+  .month-pair label {
+    display: inline-flex;
+    flex-wrap: wrap;
+  }
+}
+.month-detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 5px 10px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+.month-detail-header h3 {
+  margin: 0;
+}
+.month-detail-header button {
+  font: inherit;
+  font-size: 11px;
+  border: 0;
+  border-bottom: 1px solid currentColor;
+  background: transparent;
+  color: #35586e;
+  cursor: pointer;
+  padding: 3px 0;
+}

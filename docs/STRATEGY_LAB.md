@@ -194,3 +194,11 @@ Required checks cover:
 - Browser import, synthetic labeling, navigation, table/export consistency, and readable mobile/keyboard interactions.
 
 The lab does not model taxes, cash flows, security selection, borrow costs, margin, options, intramonth execution, or investability of research aggregates. The [research comparison and roadmap](STRATEGY_RESEARCH.md) records the data and validation requirements for expanding beyond this contract.
+
+### Reading the monthly comparison
+
+Switching the inspected strategy sets the previous strategy as its comparison. The initial comparison uses Market. Both portfolios use the same dataset, reserved months, and current fee setting. The monthly calendar subtracts the comparison strategy from the inspected strategy. The upper mark measures each portfolio's realized month-end drawdown from its own running peak, in percentage points. The lower mark measures the month's trading cost as a fraction of opening wealth, in basis points (1 bp = 0.01%). These figures are available in the exported ledgers as `drawdown` and `costFraction`.
+
+Selecting a month opens both values, their signed difference, opening exposure, turnover, and net return. Signs and bar lengths use differences rounded to two decimals in the displayed units. Each row of marks uses its own scale across the window. The largest-gap shortcuts use absolute displayed differences and select the first month in a tie. The equity chart below retains Market as its benchmark.
+
+The comparison CSV contains all 60 monthly pairs at calculation precision, the signed drawdown and cost differences, both rule IDs, fee assumption, dataset kind and canonical hash, and calculation version. The research JSON retains the input data for replay.
