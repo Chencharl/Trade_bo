@@ -5,9 +5,11 @@ import Atlas from './atlas/Atlas'
 
 const ResearchDesk = lazy(() => import('./App'))
 const StrategyLab = lazy(() => import('./lab/StrategyLab'))
+const ReversalFilterStudy = lazy(() => import('./lab/ReversalFilterStudy'))
 const FullHistoryStudy = lazy(() => import('./lab/FullHistoryStudy'))
 const HistoricalReplay = lazy(() => import('./lab/HistoricalReplay'))
 const currentRoute = () =>
+  window.location.hash === '#lab-reversal-filters' ||
   window.location.hash === '#lab-full-history' ||
   /^#lab-history-(2008|2020)(?:\?|$)/.test(window.location.hash)
     ? window.location.hash
@@ -87,6 +89,11 @@ function Root() {
   const historical = route.startsWith('#lab-history-')
   return (
     <>
+      {route === '#lab-reversal-filters' && (
+        <Suspense fallback={<p>Opening reversal study…</p>}>
+          <ReversalFilterStudy />
+        </Suspense>
+      )}
       {route === '#lab-full-history' && (
         <Suspense fallback={<p>Opening full-history study…</p>}>
           <FullHistoryStudy />

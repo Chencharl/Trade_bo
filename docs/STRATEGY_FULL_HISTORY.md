@@ -33,6 +33,8 @@ Short-term reversal averaged 31.76% equity exposure. Eight of its 126 scored cut
 
 ![Eight rules compared across the full US monthly market history](full-history-study.png)
 
+The [rolling reversal filter study](STRATEGY_REVERSAL_FILTERS.md) profiles all 118 original false alarms and tests three gates against same-date reversal and Market portfolios.
+
 ## Reproduce
 
 Install dependencies with `npm ci`, then obtain the [pinned French CSV](https://raw.githubusercontent.com/callumtoc/stat40920-group-project/e6878880db0e5a2aea34787f30a34b8a778ed133/data/raw/F-F_Research_Data_Factors.csv). The original source file stays outside the repository. The published JSON contains the derived results, including event dates, individual warning classifications and false-alarm dates.

@@ -50,6 +50,7 @@ The [research desk guide](docs/RESEARCH_DESK.md) covers the optional Python back
 
 - [Atlas model](docs/ATLAS_MODEL.md)
 - [Strategy Lab calculations and data](docs/STRATEGY_LAB.md)
+- [Short-term reversal filters and rolling test results](https://chencharl.github.io/Trade_bo/#lab-reversal-filters)
 - [Full-history study of all eight rules](https://chencharl.github.io/Trade_bo/#lab-full-history)
 - [2008 and 2020 historical replays](docs/STRATEGY_CRISIS_REPLAYS.md)
 - [Downside-warning research](docs/STRATEGY_RISK.md)

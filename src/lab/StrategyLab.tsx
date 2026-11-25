@@ -319,6 +319,7 @@ export default function StrategyLab() {
         <nav className="lab-history-links" aria-label="Open historical replays">
           <strong>Market history</strong>
           <a href="#lab-full-history">Full-history study</a>
+          <a href="#lab-reversal-filters">Reversal filter study</a>
           {['2008', '2020'].map((year, i) => (
             <a
               key={year}

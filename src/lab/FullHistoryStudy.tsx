@@ -187,6 +187,11 @@ export default function FullHistoryStudy() {
           <section aria-label="Strategy evidence" className="history-evidence">
             <h2>{rule.name}</h2>
             <p>{STRATEGIES.find((s) => s.id === id)?.summary}</p>
+            {id === 'reversal' && (
+              <p>
+                <a href="#lab-reversal-filters">Inspect false alarms and rolling filter tests →</a>
+              </p>
+            )}
             <div className="history-readout">
               <div>
                 <span>Matched / scored warnings</span>
