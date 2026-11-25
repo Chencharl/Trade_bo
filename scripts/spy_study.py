@@ -8,7 +8,6 @@ import json
 import warnings
 from datetime import date
 from pathlib import Path
-import numpy as np
 
 DATA_HASH = "4e5edc91eca2a0a358e8d5bea7b20d6b3810642c3f2eb014fff9616936df94a1"
 HOLD = "2022-01-01"
@@ -54,6 +53,8 @@ def load_rows(path, development=False):
 
 
 def observations(rows):
+    import numpy as np
+
     op, cl, div = np.array([r[1:4] for r in rows]).T
     ret = np.zeros(len(rows))
     ret[1:] = (cl[1:] + div[1:]) / cl[:-1] - 1
@@ -70,6 +71,8 @@ def observations(rows):
 
 
 def month_rules(rows, index):
+    import numpy as np
+
     orig = np.zeros(len(rows), dtype=int)
     trend = orig.copy()
     ends = []
@@ -90,6 +93,7 @@ def month_rules(rows, index):
 
 
 def train_one(rows, x, year):
+    import numpy as np
     from sklearn.neural_network import MLPClassifier
     from sklearn.preprocessing import StandardScaler
     from sklearn.exceptions import ConvergenceWarning
@@ -136,6 +140,8 @@ def train_one(rows, x, year):
 
 
 def predict(fit, x):
+    import numpy as np
+
     z = (x - np.asarray(fit["mean"])) / np.asarray(fit["scale"])
     for i, (w, b) in enumerate(zip(fit["weights"], fit["bias"], strict=True)):
         z = z @ np.asarray(w) + b
@@ -226,6 +232,8 @@ def replay(rows, start, targets, prob=None):
 
 
 def fit_stage(path, output):
+    import numpy as np
+
     rows = load_rows(path, development=True)
     dates = [r[0] for r in rows]
     x, index = observations(rows)
@@ -277,6 +285,8 @@ def fit_stage(path, output):
 
 
 def score_stage(path, model_path, out):
+    import numpy as np
+
     frozen = json.loads(model_path.read_text())
     if (
         frozen["version"] != "spy-open-1"

@@ -1,0 +1,397 @@
+.lab-main.spy-main {
+  max-width: 1320px;
+  padding-bottom: 48px;
+}
+.spy-main h1,
+.spy-main h2,
+.spy-main strong {
+  color: #1d304e;
+}
+.spy-mast,
+.spy-chart-title,
+.spy-section-top,
+.spy-inspect,
+.spy-legend,
+.spy-readout,
+.spy-library,
+.spy-period {
+  display: flex;
+  align-items: center;
+  gap: 10px 16px;
+  flex-wrap: wrap;
+}
+.spy-mast {
+  border-bottom: 1px solid var(--lab-line);
+  padding: 18px 0 14px;
+}
+.spy-mast h1 {
+  margin: 0;
+  font:
+    500 25px/1.1 'Space Grotesk',
+    sans-serif;
+  letter-spacing: -0.04em;
+  margin-right: auto;
+}
+.spy-mast a,
+.spy-library a,
+.spy-method a {
+  color: #31577a;
+  text-underline-offset: 3px;
+}
+.spy-main button,
+.spy-main select {
+  background: #fff;
+  color: #233959;
+  border: 1px solid #b6c7db;
+  border-radius: 3px;
+  font: inherit;
+  padding: 5px 8px;
+  max-width: 100%;
+}
+.spy-main button,
+.spy-main select,
+.spy-main summary {
+  cursor: pointer;
+}
+.spy-main :focus-visible {
+  outline: 3px solid #4263cc;
+  outline-offset: 2px;
+}
+.spy-mast a,
+.spy-mast button {
+  font-size: 13px;
+}
+.spy-intro {
+  padding: 21px 0 16px;
+}
+.spy-period {
+  font:
+    500 11px 'IBM Plex Mono',
+    monospace;
+  letter-spacing: 0.06em;
+  color: #49627e;
+}
+.spy-period span {
+  letter-spacing: 0;
+}
+.spy-main h2 {
+  font:
+    600 22px/1.14 'Space Grotesk',
+    sans-serif;
+  letter-spacing: -0.035em;
+  margin: 0;
+}
+.spy-intro h2 {
+  font-size: clamp(32px, 4vw, 48px);
+  margin: 6px 0 8px;
+}
+.spy-intro p {
+  font-size: clamp(15px, 1.7vw, 19px);
+  line-height: 1.5;
+  max-width: 900px;
+}
+.spy-intro b {
+  font-variant-numeric: tabular-nums;
+}
+.spy-overview {
+  display: grid;
+  grid-template-columns: minmax(0, 2.5fr) minmax(210px, 1fr);
+  border: 1px solid var(--lab-line);
+  border-radius: 5px;
+  background: #fff;
+}
+.spy-chart {
+  min-width: 0;
+  padding: 18px 20px 14px;
+}
+.spy-chart-title,
+.spy-section-top {
+  justify-content: space-between;
+}
+.spy-switch {
+  display: flex;
+  gap: 2px;
+}
+.spy-switch button,
+.spy-pair label,
+.spy-section-top label,
+.spy-selector,
+.spy-order select {
+  font-size: 13px;
+}
+.spy-switch [aria-pressed='true'] {
+  background: #284875;
+  color: white;
+  border-color: #284875;
+}
+.spy-legend,
+.spy-readout,
+.spy-note,
+.spy-inspect {
+  font-size: 12px;
+  color: #465a74;
+}
+.spy-legend {
+  margin: 8px 0 0;
+}
+.spy-legend span {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+}
+.spy-legend i {
+  width: 18px;
+  border-top: 2px solid #4263cc;
+}
+.spy-legend span + span i {
+  border-top: 2px dashed #63788d;
+}
+.spy-plot svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+  touch-action: pan-y;
+}
+.spy-plot text {
+  font:
+    11px 'IBM Plex Mono',
+    monospace;
+  fill: #4d6481;
+}
+.spy-grid {
+  stroke: #dfe6f0;
+}
+.spy-line,
+.spy-reference {
+  fill: none;
+  stroke: #4263cc;
+  stroke-width: 2.6;
+  stroke-linejoin: round;
+}
+.spy-reference {
+  stroke: #63788d;
+  stroke-width: 2;
+  stroke-dasharray: 5 3;
+}
+.spy-cursor {
+  stroke: #8d9cb0;
+  stroke-dasharray: 2 3;
+}
+.spy-inspect {
+  margin-top: 7px;
+}
+.spy-inspect input {
+  flex: 1;
+  min-width: 40px;
+  accent-color: #4263cc;
+}
+.spy-readout {
+  margin-top: 5px;
+  font-variant-numeric: tabular-nums;
+}
+.spy-pair {
+  background: #edf2f8;
+  border-left: 1px solid var(--lab-line);
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+}
+.spy-pair label {
+  display: grid;
+  gap: 3px;
+}
+.spy-pair div {
+  border-top: 1px solid #cfd9e7;
+  padding-top: 8px;
+}
+.spy-pair div > span {
+  display: block;
+  font-size: 13px;
+}
+.spy-pair strong {
+  display: block;
+  font:
+    600 clamp(21px, 2.8vw, 32px) 'Space Grotesk',
+    sans-serif;
+  letter-spacing: -0.025em;
+}
+.spy-pair small {
+  font:
+    400 12px 'DM Sans',
+    sans-serif;
+}
+.spy-pair p {
+  font-size: 12px;
+  color: #485e78;
+}
+.spy-results,
+.spy-orders,
+.spy-method,
+.spy-library {
+  margin-top: 23px;
+}
+.spy-tablebox {
+  margin-top: 9px;
+}
+.spy-main table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  font-variant-numeric: tabular-nums;
+}
+.spy-main :is(th, td) {
+  text-align: right;
+  padding: 9px 10px;
+  border-bottom: 1px solid var(--lab-line);
+  font-size: 14px;
+}
+.spy-main th:first-child {
+  text-align: left;
+}
+.spy-main thead th {
+  background: #e7edf5;
+  color: #3d536d;
+  font-size: 12px;
+}
+.spy-results tbody tr:first-child {
+  background: #f0f4ff;
+}
+.spy-main .spy-note {
+  margin-top: 5px;
+}
+.spy-selector {
+  display: block;
+  margin: 10px 0;
+}
+.spy-ticket {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border-block: 1px solid var(--lab-line);
+  padding: 12px 0;
+  gap: 12px;
+}
+.spy-ticket > div {
+  display: grid;
+  gap: 2px;
+}
+.spy-ticket span,
+.spy-ticket small {
+  font-size: 12px;
+  color: #4f6580;
+}
+.spy-ticket strong {
+  font:
+    600 17px 'Space Grotesk',
+    sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+.spy-method {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--lab-line);
+}
+.spy-method summary {
+  font-weight: 600;
+}
+.spy-main .spy-method p {
+  margin: 9px 0;
+  max-width: 860px;
+}
+.spy-library h2 {
+  width: 100%;
+}
+.spy-library a {
+  font-size: 14px;
+}
+@media (max-width: 740px) {
+  .spy-overview {
+    display: block;
+  }
+  .spy-pair {
+    border-left: 0;
+    border-top: 1px solid var(--lab-line);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    padding: 12px 14px;
+    gap: 7px 16px;
+  }
+  .spy-pair label {
+    grid-column: 1/-1;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .spy-chart {
+    padding: 13px 10px;
+  }
+  .spy-ticket {
+    grid-template-columns: 1fr 1fr;
+  }
+  .spy-mast {
+    gap: 5px 10px;
+  }
+  .spy-chart-title {
+    gap: 6px;
+  }
+  .spy-intro {
+    padding: 14px 0 12px;
+  }
+  .spy-main h2 {
+    font-size: 21px;
+  }
+  .spy-intro h2 {
+    font-size: 32px;
+  }
+  .spy-main table,
+  .spy-main tbody {
+    display: block;
+  }
+  .spy-main thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    clip-path: inset(50%);
+    overflow: hidden;
+  }
+  .spy-main tbody tr {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    padding: 8px 10px;
+    gap: 4px 10px;
+    border-bottom: 1px solid var(--lab-line);
+  }
+  .spy-main tbody :is(th, td) {
+    text-align: left;
+    padding: 0;
+    border: 0;
+  }
+  .spy-main tbody th {
+    grid-column: 1/-1;
+  }
+  .spy-main td:before {
+    content: attr(data-label);
+    display: block;
+    font-size: 12px;
+    color: #4a607b;
+  }
+  .spy-results,
+  .spy-orders,
+  .spy-method,
+  .spy-library {
+    margin-top: 18px;
+  }
+}
+
+.spy-main .spy-activity {
+  margin-top: 9px;
+  font-size: 13px;
+  color: #405670;
+}
+
+.spy-main .spy-leaders {
+  margin-top: 6px;
+  font-size: 14px;
+  color: #405670;
+}

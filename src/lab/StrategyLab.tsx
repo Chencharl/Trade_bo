@@ -331,6 +331,7 @@ export default function StrategyLab() {
         </div>
         <nav className="lab-history-links" aria-label="Open historical replays">
           <strong>Market history</strong>
+          <a href="#lab">SPY daily results</a>
           <a href="#lab-timing-test">Timing vs chance</a>
           <a href="#lab-exposure">Stock exposure &amp; timing</a>
           <a href="#lab-full-history">Full-history study</a>

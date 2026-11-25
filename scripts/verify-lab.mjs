@@ -6,7 +6,7 @@ try {
     viewport: { width: 1440, height: 1080 },
     deviceScaleFactor: 1,
   })
-  await page.goto(process.env.LAB_URL || 'http://127.0.0.1:4173/#lab')
+  await page.goto(process.env.LAB_URL || 'http://127.0.0.1:4173/#lab-workbench')
   await page.getByRole('button', { name: 'Export research run', exact: true }).waitFor()
   await page.waitForFunction(
     () => !document.querySelector('.lab-results')?.getAttribute('aria-busy')?.includes('true'),

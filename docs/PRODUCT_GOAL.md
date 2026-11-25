@@ -8,7 +8,7 @@ A successful evaluator can report underperformance or an inconclusive result. Pa
 
 ## Current foundation
 
-Strategy Lab evaluates eight fixed monthly market/cash rules with lagged signals, turnover costs, chronological selection, and source-aware exports. Its default data is synthetic; imported snapshots are not certified point-in-time data. Atlas and the local research desk remain separate supporting components.
+Strategy Lab evaluates eight fixed monthly market/cash rules with lagged signals, turnover costs, chronological selection, and source-aware exports. The homepage compares a frozen neural model against three baselines using real SPY daily bars and next-open simulated fills. The monthly workbench starts with synthetic data. Imported snapshots can contain revisions. Atlas and the local research desk remain separate supporting components.
 
 The **v1.2 foundation milestone is complete**: same-date walk-forward baselines, Cash abstention, offline report verification, and preservation of edited desk inputs on refresh. The [validation record](VALIDATION.md) preserves results and limitations; the [calculation contract](STRATEGY_LAB.md) defines implemented behavior. Cash is chosen when no eligible rule has a positive, finite training excess Sharpe; this is an algorithm policy, not a universal research-acceptance threshold.
 

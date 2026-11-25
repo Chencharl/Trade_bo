@@ -1,6 +1,6 @@
 # Strategy Lab: calculation and evidence contract
 
-Strategy Lab compares eight fixed allocation rules using monthly market and cash total returns. It is available at [`#lab`](https://chencharl.github.io/Trade_bo/#lab). It is separate from [Atlas's illustrative future-path simulation](ATLAS_MODEL.md) and the [local equity research desk](RESEARCH_DESK.md).
+The Strategy Lab monthly workbench compares eight fixed allocation rules using monthly market and cash total returns. [Open the monthly workbench](https://chencharl.github.io/Trade_bo/#lab-workbench) or view the [daily SPY holdout](STRATEGY_SPY_DAILY.md). It is separate from [Atlas's illustrative future-path simulation](ATLAS_MODEL.md) and the [local equity research desk](RESEARCH_DESK.md).
 
 The default dataset is generated synthetic data, not market history. Users can import a local return CSV or a supported Kenneth French file. Third-party market datasets are not bundled. Results are exploratory: the final window is excluded from automated selection, but showing it does not make it permanently unseen or validate a profitable strategy.
 

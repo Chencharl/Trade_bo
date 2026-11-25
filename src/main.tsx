@@ -6,22 +6,25 @@ import Atlas from './atlas/Atlas'
 const ResearchDesk = lazy(() => import('./App'))
 const TimingTestPage = lazy(() => import('./lab/TimingTestPage'))
 const ExposureStudyPage = lazy(() => import('./lab/ExposureStudyPage'))
+const SpyDailyPage = lazy(() => import('./lab/SpyDailyPage'))
 const StrategyLab = lazy(() => import('./lab/StrategyLab'))
 const ReversalFilterStudy = lazy(() => import('./lab/ReversalFilterStudy'))
 const FullHistoryStudy = lazy(() => import('./lab/FullHistoryStudy'))
 const HistoricalReplay = lazy(() => import('./lab/HistoricalReplay'))
 const currentRoute = () =>
-  window.location.hash === '#lab-timing-test' ||
-  window.location.hash === '#lab-exposure' ||
-  window.location.hash === '#lab-reversal-filters' ||
-  window.location.hash === '#lab-full-history' ||
-  /^#lab-history-(2008|2020)(?:\?|$)/.test(window.location.hash)
-    ? window.location.hash
-    : window.location.hash.startsWith('#lab')
-      ? 'lab'
-      : window.location.hash === '#research'
-        ? 'research'
-        : 'atlas'
+  ['#lab', '#lab-spy-daily'].includes(window.location.hash)
+    ? 'daily'
+    : window.location.hash === '#lab-timing-test' ||
+        window.location.hash === '#lab-exposure' ||
+        window.location.hash === '#lab-reversal-filters' ||
+        window.location.hash === '#lab-full-history' ||
+        /^#lab-history-(2008|2020)(?:\?|$)/.test(window.location.hash)
+      ? window.location.hash
+      : window.location.hash.startsWith('#lab')
+        ? 'lab'
+        : window.location.hash === '#research'
+          ? 'research'
+          : 'atlas'
 
 function ResearchEntry() {
   const [available, setAvailable] = useState(false)
@@ -97,6 +100,11 @@ function Root() {
   const historical = route.startsWith('#lab-history-')
   return (
     <>
+      {route === 'daily' && (
+        <Suspense fallback={<p>Opening Strategy Lab…</p>}>
+          <SpyDailyPage />
+        </Suspense>
+      )}
       {route === '#lab-timing-test' && (
         <Suspense fallback={<p>Opening timing test…</p>}>
           <TimingTestPage />

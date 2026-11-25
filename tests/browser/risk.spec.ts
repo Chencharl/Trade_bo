@@ -63,7 +63,7 @@ test('retrospective downside counts match exported inputs and distinguish late w
   page.on('request', (request) => {
     if (request.url().includes('/api/')) apiRequests.push(request.url())
   })
-  await page.goto('/#lab')
+  await page.goto('/#lab-workbench')
   await ready(page)
   await expect(
     page.getByText('SYNTHETIC DOWNSIDE CHECK · risk-audit-1', { exact: true }),
@@ -160,7 +160,7 @@ test('retrospective downside counts match exported inputs and distinguish late w
 test('zero-event and zero-upside samples show missing denominators instead of invented scores', async ({
   page,
 }) => {
-  await page.goto('/#lab')
+  await page.goto('/#lab-workbench')
   await ready(page)
   await uploadReturns(page, Array(180).fill(0.01))
   await page.getByRole('button', { name: 'Inspect Cash', exact: true }).click()
@@ -181,7 +181,7 @@ test('downside evidence remains readable and keyboard accessible at 320 pixels',
   page,
 }) => {
   await page.setViewportSize({ width: 320, height: 900 })
-  await page.goto('/#lab')
+  await page.goto('/#lab-workbench')
   await ready(page)
   await page.evaluate(() => document.fonts.ready)
   const panel = page.getByRole('region', {
