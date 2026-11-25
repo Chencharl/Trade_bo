@@ -118,6 +118,7 @@ export default function HistoricalReplay({ route }: { route: string }) {
         <p>US equity market and Treasury bills · Kenneth French Data Library</p>
       </header>
       <nav aria-label="Historical episodes">
+        <a href="#lab-full-history">Full-history study</a>
         {(Object.keys(EPISODES) as EpisodeId[]).map((id) => (
           <a
             key={id}

@@ -5,8 +5,10 @@ import Atlas from './atlas/Atlas'
 
 const ResearchDesk = lazy(() => import('./App'))
 const StrategyLab = lazy(() => import('./lab/StrategyLab'))
+const FullHistoryStudy = lazy(() => import('./lab/FullHistoryStudy'))
 const HistoricalReplay = lazy(() => import('./lab/HistoricalReplay'))
 const currentRoute = () =>
+  window.location.hash === '#lab-full-history' ||
   /^#lab-history-(2008|2020)(?:\?|$)/.test(window.location.hash)
     ? window.location.hash
     : window.location.hash.startsWith('#lab')
@@ -85,6 +87,11 @@ function Root() {
   const historical = route.startsWith('#lab-history-')
   return (
     <>
+      {route === '#lab-full-history' && (
+        <Suspense fallback={<p>Opening full-history study…</p>}>
+          <FullHistoryStudy />
+        </Suspense>
+      )}
       {historical && (
         <Suspense fallback={<p>Opening historical replay…</p>}>
           <HistoricalReplay route={route} />
