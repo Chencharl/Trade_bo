@@ -1,0 +1,294 @@
+.lab-main.xp {
+  max-width: 1160px;
+  padding-bottom: 56px;
+}
+.xp .xp-nav {
+  padding-top: 18px;
+  margin: 0;
+}
+.xp-nav button {
+  margin-left: auto;
+}
+.xp button,
+.xp select {
+  font: inherit;
+  color: inherit;
+  border: 1px solid #b7c6d7;
+  border-radius: 3px;
+  background: #fff;
+  padding: 5px 9px;
+}
+.xp .xp-nav button,
+.xp-chart button,
+.xp-chart select {
+  font-size: 13px;
+}
+.xp .lab-mast {
+  padding-bottom: 8px;
+}
+.xp h2 {
+  font:
+    600 23px/1.25 'Space Grotesk',
+    sans-serif;
+  letter-spacing: -0.035em;
+  margin: 0;
+}
+.xp-summary {
+  border-block: 1px solid var(--lab-line);
+  margin: 8px 0 0;
+  padding: 10px 0;
+}
+.xp-summary p,
+.xp-summary dl,
+.xp-summary dd {
+  margin: 0;
+}
+.xp-summary dl {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 40px;
+  margin-top: 8px;
+}
+.xp-summary dt,
+.xp-footnote,
+.xp-chart-note,
+.xp-method label,
+.xp-slider,
+.xp-comparison > p {
+  color: var(--lab-muted);
+}
+.xp-summary dt {
+  font-size: 13px;
+}
+.xp-summary dd {
+  font:
+    600 20px/1.5 'IBM Plex Mono',
+    monospace;
+}
+.xp-summary dd small {
+  font:
+    400 13px 'DM Sans',
+    sans-serif;
+}
+.xp .xp-finding {
+  margin: 10px 0 16px;
+}
+.xp-chart {
+  border: 1px solid var(--lab-line);
+  border-radius: 5px;
+  background: white;
+  padding: 16px 20px;
+}
+.xp-chart-top,
+.xp-chart-controls,
+.xp-readout,
+.xp-slider,
+.xp-links {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  flex-wrap: wrap;
+}
+.xp-chart-top label,
+.xp-method label {
+  font-size: 13px;
+}
+.xp select {
+  max-width: 100%;
+}
+.xp-chart-controls {
+  margin: 12px 0 7px;
+}
+.xp-switch,
+.xp-period {
+  display: inline-flex;
+  gap: 3px;
+}
+.xp-chart button[aria-pressed='true'] {
+  background: #253f73;
+  color: #fff;
+  border-color: #253f73;
+}
+.xp-chart-note,
+.xp-footnote {
+  font-size: 12px;
+  margin: 6px 0;
+}
+.xp-plot svg {
+  width: 100%;
+  display: block;
+  height: auto;
+  touch-action: pan-y;
+}
+.xp-plot text {
+  font:
+    11px 'IBM Plex Mono',
+    monospace;
+  fill: #50647c;
+}
+.xp-grid {
+  stroke: #e2e9f1;
+}
+.xp-cursor {
+  stroke: #8090a1;
+  stroke-dasharray: 2 4;
+}
+.xp-rule-line,
+.xp-mix-line {
+  fill: none;
+  stroke: var(--lab-blue);
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+}
+.xp-mix-line {
+  stroke: #63788d;
+  stroke-width: 2;
+  stroke-dasharray: 6 4;
+}
+.xp-mix-dot {
+  fill: #63788d;
+}
+.xp-rule-dot {
+  fill: var(--lab-blue);
+}
+.xp-readout {
+  justify-content: flex-start;
+  font-size: 13px;
+  gap: 6px 16px;
+  font-variant-numeric: tabular-nums;
+}
+.xp-readout span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.xp-readout i {
+  width: 18px;
+  border-top: 2px solid var(--lab-blue);
+}
+.xp-readout span:last-child i {
+  border-top: 2px dashed #63788d;
+}
+.xp-slider {
+  justify-content: flex-start;
+  font-size: 12px;
+  margin-top: 6px;
+}
+.xp-slider input {
+  flex: 1;
+  min-width: 75px;
+  accent-color: var(--lab-blue);
+}
+.xp-comparison,
+.xp-method {
+  margin-top: 22px;
+}
+.xp-comparison > p {
+  margin: 6px 0 10px;
+}
+.xp-comparison table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+  background: #fff;
+}
+.xp-comparison :is(td, th) {
+  text-align: right;
+  border-bottom: 1px solid var(--lab-line);
+  padding: 8px 10px;
+}
+.xp-comparison th:first-child {
+  text-align: left;
+}
+.xp-comparison thead th {
+  background: #eaf0f7;
+  font-size: 13px;
+}
+.xp-method {
+  border-block: 1px solid var(--lab-line);
+  padding: 12px 0;
+}
+.xp-method summary {
+  font-weight: 650;
+  cursor: pointer;
+}
+.xp-method > p {
+  max-width: 800px;
+}
+.xp-fold {
+  list-style: none;
+  padding: 0;
+  max-width: 435px;
+}
+.xp-fold li {
+  display: flex;
+  justify-content: space-between;
+  padding: 3px 0;
+}
+.xp-links {
+  justify-content: flex-start;
+  font-size: 13px;
+}
+@media (max-width: 620px) {
+  .xp-chart {
+    padding: 12px 10px;
+  }
+  .xp-chart-controls button {
+    padding: 5px 7px;
+  }
+  .xp-readout {
+    display: grid;
+    gap: 3px;
+  }
+  .xp h2 {
+    font-size: 21px;
+  }
+  .xp-summary dl {
+    gap: 4px 20px;
+  }
+  .xp-summary dd {
+    font-size: 17px;
+  }
+  .xp .xp-nav {
+    gap: 5px 9px;
+  }
+  .xp-comparison table,
+  .xp-comparison tbody {
+    display: block;
+  }
+  .xp-comparison thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    clip-path: inset(50%);
+    overflow: hidden;
+  }
+  .xp-comparison tbody tr {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5px 10px;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--lab-line);
+  }
+  .xp-comparison tbody :is(th, td) {
+    padding: 0;
+    border: 0;
+    text-align: left;
+  }
+  .xp-comparison tbody th {
+    grid-column: 1/-1;
+  }
+  .xp-comparison td:before {
+    display: block;
+    content: attr(data-label);
+    font-size: 12px;
+    color: var(--lab-muted);
+  }
+}
+
+.xp .xp-holdings {
+  margin: 4px 0;
+  font-size: 12px;
+  color: var(--lab-muted);
+}

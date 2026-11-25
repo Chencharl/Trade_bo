@@ -154,6 +154,9 @@ function Findings({ r }: { r: ReversalStudy }) {
                 ' test months fall after a crisis trough through recovery. The gaps are mean monthly net-return differences. These months already enter full-period wealth.'}
         </p>
       </section>
+      <p>
+        <a href="#lab-exposure">How much of the extra return came from higher stock exposure? →</a>
+      </p>
       <section className="history-evidence">
         <h2>The original {early.length} advance cuts</h2>
         <p className="history-caption">

@@ -172,6 +172,8 @@ The engine draws 1,000 deterministic-seed moving-block replicates. The default s
 
 This is a descriptive, conditional interval. The procedure does not rerun automated selection in each replicate, correct for inspecting eight rules, account for prior human experimentation, or prove that market regimes recur. A six-month block is a fixed dependence approximation. The interval is not a selection-adjusted significance test or a calibrated forecast of future performance. Inspecting Market against itself gives an exact zero difference and interval.
 
+The [stock exposure and timing study](https://chencharl.github.io/Trade_bo/#lab-exposure) compares trend-filtered and original reversal with their own lagged fixed allocations.
+
 ## Reproduction and acceptance checks
 
 Export a research run from Strategy Lab, then use the matching source release:

@@ -4,11 +4,13 @@ import { lazy, Suspense, useEffect, useState } from 'react'
 import Atlas from './atlas/Atlas'
 
 const ResearchDesk = lazy(() => import('./App'))
+const ExposureStudyPage = lazy(() => import('./lab/ExposureStudyPage'))
 const StrategyLab = lazy(() => import('./lab/StrategyLab'))
 const ReversalFilterStudy = lazy(() => import('./lab/ReversalFilterStudy'))
 const FullHistoryStudy = lazy(() => import('./lab/FullHistoryStudy'))
 const HistoricalReplay = lazy(() => import('./lab/HistoricalReplay'))
 const currentRoute = () =>
+  window.location.hash === '#lab-exposure' ||
   window.location.hash === '#lab-reversal-filters' ||
   window.location.hash === '#lab-full-history' ||
   /^#lab-history-(2008|2020)(?:\?|$)/.test(window.location.hash)
@@ -86,9 +88,18 @@ function Root() {
     window.addEventListener('hashchange', navigate)
     return () => window.removeEventListener('hashchange', navigate)
   }, [])
+  useEffect(() => {
+    if (route !== 'atlas' && route !== 'research' && window.location.hash !== '#lab-main')
+      window.scrollTo(0, 0)
+  }, [route])
   const historical = route.startsWith('#lab-history-')
   return (
     <>
+      {route === '#lab-exposure' && (
+        <Suspense fallback={<p>Opening Strategy Lab…</p>}>
+          <ExposureStudyPage />
+        </Suspense>
+      )}
       {route === '#lab-reversal-filters' && (
         <Suspense fallback={<p>Opening reversal study…</p>}>
           <ReversalFilterStudy />

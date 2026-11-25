@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import { ArrowLeft, ArrowUpRight, Download, Github, Layers3, Upload } from 'lucide-react'
+import { ArrowUpRight, Download, Upload } from 'lucide-react'
 import { DEFAULT_LAB_CONFIG, evaluateLab, LAB_VERSION, STRATEGIES } from './engine'
+import LabHeader from './LabHeader'
 import MonthComparison from './MonthComparison'
 import type { LabConfig, StrategyId } from './engine'
 import { createDemoDataset, datasetCSV, importDataset } from './data'
@@ -41,6 +42,7 @@ function download(filename: string, contents: string, type: string) {
 }
 
 function EquityChart({ selected, benchmark }: { selected: Run; benchmark: Run }) {
+  const [monthly, setMonthly] = useState(false)
   const [compact, setCompact] = useState(() => matchMedia('(max-width: 700px)').matches)
   useEffect(() => {
     const media = matchMedia('(max-width: 700px)')
@@ -52,56 +54,88 @@ function EquityChart({ selected, benchmark }: { selected: Run; benchmark: Run })
   const left = compact ? 64 : 64
   const right = width - 20
   const points = selected.ledger
-  const values = [
-    1,
-    ...points.map((row) => row.equity),
-    ...benchmark.ledger.map((row) => row.equity),
-  ]
-  const low = Math.max(0, Math.min(...values) * 0.9)
-  const high = Math.max(...values) * 1.08
+  const series = (run: Run) =>
+    monthly ? run.ledger.map((r) => r.netReturn) : [1, ...run.ledger.map((r) => r.equity)]
+  const values = [...series(selected), ...series(benchmark)]
+  if (monthly) values.push(0)
+  const min = Math.min(...values),
+    max = Math.max(...values)
+  const pad = (max - min) * 0.06 || (monthly ? 0.001 : 0.005)
+  const low = monthly ? min - pad : Math.max(0, min - pad),
+    high = max + pad
   const x = (i: number) => left + (i / points.length) * (right - left)
   const y = (value: number) => 245 - ((value - low) / (high - low)) * 205
   const path = (run: Run) =>
-    [1, ...run.ledger.map((row) => row.equity)]
-      .map((value, i) => `${i ? 'L' : 'M'}${x(i)},${y(value)}`)
+    series(run)
+      .map((value, i) => (i ? 'L' : 'M') + x(monthly ? i + 1 : i) + ',' + y(value))
       .join(' ')
+  const digits = Math.min(8, Math.max(0, Math.ceil(-Math.log10(((high - low) * 100) / 4))))
   const worst = Math.max(0.05, ...points.map((row) => row.drawdown))
   const dd = `M${left},315 ${points.map((row, i) => `L${x(i + 1)},${315 + (row.drawdown / worst) * 55}`).join(' ')} L${right},315 Z`
   return (
-    <svg
-      className="lab-equity-svg"
-      viewBox={`0 0 ${width} 402`}
-      role="img"
-      aria-label={`Reserved-window equity and drawdown. ${selected.name}: ${pct(selected.metrics.totalReturn)} total return. Market: ${pct(benchmark.metrics.totalReturn)}. Maximum drawdown ${pct(selected.metrics.maxDrawdown)}.`}
-      style={{ fontSize: compact ? 16 : 12 }}
-    >
-      {[0, 1, 2, 3, 4].map((tick) => {
-        const value = low + ((high - low) * tick) / 4
-        return (
-          <g key={tick}>
-            <line x1={left} x2={right} y1={y(value)} y2={y(value)} className="lab-grid" />
-            <text x={left - 10} y={y(value) + 5} textAnchor="end">
-              {Math.round(value * 100)}
-            </text>
-          </g>
-        )
-      })}
-      <path d={path(benchmark)} className="lab-benchmark-line" />
-      <path d={path(selected)} className="lab-strategy-line" />
-      {[0, 12, 24, 36, 48, 60].map((i) => (
-        <text key={i} x={x(i)} y="278" textAnchor={i === 0 ? 'start' : i === 60 ? 'end' : 'middle'}>
-          {i === 0 ? 'Start' : points[i - 1].date.slice(0, 4)}
+    <>
+      <div className="lab-plot-options" role="group" aria-label="Chart measure">
+        <button aria-pressed={!monthly} onClick={() => setMonthly(false)}>
+          Portfolio value from 100
+        </button>
+        <button aria-pressed={monthly} onClick={() => setMonthly(true)}>
+          Monthly gain or loss
+        </button>
+      </div>
+      <svg
+        className="lab-equity-svg"
+        viewBox={`0 0 ${width} 402`}
+        role="img"
+        aria-label={`Reserved-window equity and drawdown. ${monthly ? 'Monthly gain or loss' : 'Value from 100'}. ${selected.name}: ${pct(selected.metrics.totalReturn)} total return. Market: ${pct(benchmark.metrics.totalReturn)}. Maximum drawdown ${pct(selected.metrics.maxDrawdown)}.`}
+        style={{ fontSize: compact ? 16 : 12 }}
+      >
+        {[0, 1, 2, 3, 4].map((tick) => {
+          const value = low + ((high - low) * tick) / 4
+          return (
+            <g key={tick}>
+              <line x1={left} x2={right} y1={y(value)} y2={y(value)} className="lab-grid" />
+              <text x={left - 10} y={y(value) + 5} textAnchor="end">
+                {(value * 100).toFixed(digits)}
+                {monthly ? '%' : ''}
+              </text>
+            </g>
+          )
+        })}
+        {monthly && (
+          <line x1={left} x2={right} y1={y(0)} y2={y(0)} stroke="#748297" strokeDasharray="3 3" />
+        )}
+        {selected.id !== 'market' && <path d={path(benchmark)} className="lab-benchmark-line" />}
+        <path d={path(selected)} className="lab-strategy-line" />
+        {[0, 12, 24, 36, 48, 60].map((i) => (
+          <text
+            key={i}
+            x={x(i)}
+            y="278"
+            textAnchor={i === 0 ? 'start' : i === 60 ? 'end' : 'middle'}
+          >
+            {i === 0 ? 'Start' : points[i - 1].date.slice(0, 4)}
+          </text>
+        ))}
+        <text x={left} y="309" className="lab-dd-caption">
+          DRAWDOWN
         </text>
-      ))}
-      <text x={left} y="309" className="lab-dd-caption">
-        DRAWDOWN
-      </text>
-      <path d={dd} className="lab-dd-area" />
-      <line x1={left} x2={right} y1="315" y2="315" className="lab-grid" />
-      <text x={left} y="394">
-        −{pct(worst)} at the lower edge
-      </text>
-    </svg>
+        <path d={dd} className="lab-dd-area" />
+        <line x1={left} x2={right} y1="315" y2="315" className="lab-grid" />
+        <text x={left} y="394">
+          −{pct(worst)} at the lower edge
+        </text>
+      </svg>
+      <p className="lab-plot-note">
+        {selected.id === 'market'
+          ? 'Selected Market and its benchmark share the same path.'
+          : selected.name +
+            ' held only cash in ' +
+            points.filter((r) => r.targetWeight === 0).length +
+            ' of ' +
+            points.length +
+            ' months.'}
+      </p>
+    </>
   )
 }
 
@@ -289,28 +323,7 @@ export default function StrategyLab() {
       <a className="atlas-skip" href="#lab-main">
         Skip to the strategy evaluation
       </a>
-      <header className="lab-header">
-        <a className="atlas-brand" href="#" aria-label="TradeBo Atlas home">
-          <span className="atlas-brand-mark">
-            <Layers3 size={23} />
-          </span>
-          <span>
-            tradebo<span className="brand-slash">/</span>
-            <strong>lab</strong>
-          </span>
-        </a>
-        <nav aria-label="Strategy Lab navigation">
-          <a href="#">
-            <ArrowLeft size={14} /> Atlas
-          </a>
-          <a href={`${REPO}/blob/main/docs/STRATEGY_RESEARCH.md`} target="_blank" rel="noreferrer">
-            Research notes <ArrowUpRight size={14} />
-          </a>
-          <a href={REPO} target="_blank" rel="noreferrer" aria-label="View source on GitHub">
-            <Github size={19} />
-          </a>
-        </nav>
-      </header>
+      <LabHeader />
       <main id="lab-main" className="lab-main">
         <div className="lab-mast">
           <h1>Strategy Lab</h1>
@@ -318,6 +331,7 @@ export default function StrategyLab() {
         </div>
         <nav className="lab-history-links" aria-label="Open historical replays">
           <strong>Market history</strong>
+          <a href="#lab-exposure">Stock exposure &amp; timing</a>
           <a href="#lab-full-history">Full-history study</a>
           <a href="#lab-reversal-filters">Reversal filter study</a>
           {['2008', '2020'].map((year, i) => (
@@ -491,7 +505,7 @@ export default function StrategyLab() {
             <div className="lab-chart-heading">
               <div>
                 <span className="lab-kicker">RESERVED WINDOW · NET OF COSTS</span>
-                <h2>Portfolio value from 100</h2>
+                <h2>Strategy and market</h2>
               </div>
               <span className="lab-run-state">
                 {busy ? 'Evaluating…' : result ? 'Replay complete' : 'Evaluation unavailable'}
@@ -502,11 +516,13 @@ export default function StrategyLab() {
                 <i />
                 {selectedRule.name}
               </span>
-              <span className="benchmark">
-                <i />
-                Market benchmark
-              </span>
-              <span>Equity above · drawdown below</span>
+              {selectedRule.id !== 'market' && (
+                <span className="benchmark">
+                  <i />
+                  Market benchmark
+                </span>
+              )}
+              <span>Drawdown below</span>
             </div>
             {selected && benchmark ? (
               <EquityChart selected={selected} benchmark={benchmark} />
