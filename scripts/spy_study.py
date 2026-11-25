@@ -150,7 +150,7 @@ def predict(fit, x):
     return 1 / (1 + np.exp(-np.clip(z.ravel(), -700, 700)))
 
 
-def replay(rows, start, targets, prob=None):
+def replay(rows, start, targets, prob=None, *, fee_rate=FEE, slip_rate=SLIP):
     dates = [r[0] for r in rows]
     cash = peak = CAPITAL
     shares = unpaid = fees = slip = dividends = dd = 0.0
@@ -172,20 +172,20 @@ def replay(rows, start, targets, prob=None):
         unpaid -= released
         old = shares
         if w and cash > 1e-8:
-            fill = op * (1 + SLIP)
-            qty = cash / (fill * (1 + FEE))
+            fill = op * (1 + slip_rate)
+            qty = cash / (fill * (1 + fee_rate))
             shares += qty
             cash = 0.0
         elif not w and shares:
-            fill = op * (1 - SLIP)
+            fill = op * (1 - slip_rate)
             qty = -shares
-            cash += shares * fill * (1 - FEE)
+            cash += shares * fill * (1 - fee_rate)
             shares = 0.0
         else:
             qty = 0.0
         if qty:
-            commission = abs(qty) * fill * FEE
-            impact = abs(qty) * op * SLIP
+            commission = abs(qty) * fill * fee_rate
+            impact = abs(qty) * op * slip_rate
             fees += commission
             slip += impact
             ledger.append(

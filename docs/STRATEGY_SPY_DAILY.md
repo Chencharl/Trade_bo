@@ -36,6 +36,38 @@ The 12 preceding rolling development folds cover 2010–2021. Continuous net CAG
 
 [![SPY holdout in Strategy Lab](spy-daily.png)](https://chencharl.github.io/Trade_bo/#lab)
 
+## Where the 69 cash days went
+
+This retrospective attribution (`spy-spells-1`) uses the same 1,212 sessions, frozen signals and fill rules as the final test. The 69 days form 64 continuous spells. Twenty-eight raised ending wealth by a combined $5,004.82. Thirty-six lowered it by $4,730.87. The difference, $273.95, is 2.74 percentage points of the initial $10,000.
+
+| Exit open → re-entry open | Cash sessions | SPY declines avoided | SPY gains missed | Commission + slippage | Change in ending wealth |
+| ------------------------- | ------------: | -------------------: | ---------------: | --------------------: | ----------------------: |
+| Apr 3 → Apr 7, 2025       |             2 |               10.26% |            0.00% |                 $6.51 |              +$1,737.34 |
+| Apr 8 → Apr 9, 2025       |             1 |                5.45% |            0.00% |                 $6.94 |                +$969.77 |
+| Dec 18 → Dec 19, 2024     |             1 |                2.09% |            0.00% |                 $7.38 |                +$326.43 |
+| Mar 21 → Mar 24, 2025     |             1 |                0.00% |            2.06% |                 $6.80 |                −$323.06 |
+| Jan 25 → Jan 27, 2022     |             2 |                0.57% |            1.77% |                 $5.45 |                −$210.27 |
+
+The model and buy-and-hold reached their largest drawdowns from January 3 to October 12, 2022. Six model exits occurred by that trough. The January 25, February 25 and July 6 exits deepened the maximum loss by 0.94, 0.46 and 0.63 percentage points in the chronological replay. The other three offset 1.18 points. The net effect was 0.85 points, taking drawdown from 24.49% to 25.34%. The large April 2025 gains came after that loss.
+
+The trend filter sold on August 1, 2022 and bought back on September 1. SPY fell 3.97% between those opens, including the ups and downs along the way. Over the same interval the trend account returned −0.06% and the neural model returned −3.46%, both after costs. That single trend exit added $688.02 at the end of the test. Its worst drawdown was 22.99%, at the earlier June 16 trough.
+
+| Ending wealth relative to holding SPY             | Neural model | Trend filter | Model minus trend |
+| ------------------------------------------------- | -----------: | -----------: | ----------------: |
+| Zero commission and zero slippage on all accounts |     +$944.52 |     +$698.74 |          +$245.77 |
+| With the published trading costs                  |     +$273.95 |     +$688.02 |          −$414.07 |
+
+Dollar differences use unrounded balances. Trading friction and the subsequent compounding of the smaller positions shifted the model–trend gap by $659.84. The modeled commissions and slippage charged over the entire test were $449.10 for the model and $8.38 for trend. Of the model costs, $445.91 came from its 64 exit/re-entry windows. The rest came from its first purchase and separate dividend reinvestments.
+
+### How to read one exit
+
+- **Market moves while in cash.** A spell runs from the sell at the open up to the buy at a later open. For one SPY share, each step is the next opening price minus today's opening price plus distributions earned at the next ex-date. Sum negative and positive moves separately, then divide both by the original exit price. Their difference describes holding that share over the window. A final open spell ends at the last close. The overnight drop before the exit and the intraday rebound after re-entry fall outside the window.
+- **What both accounts earned.** Mark each portfolio immediately before any opening trade on the exit date and just after the trade on the re-entry date. This includes commissions, slippage, cash and any accrued dividend claims. Each side's window return uses its own starting wealth. The chart line uses daily closing net worth. Its dots mark exit dates and the shaded interval extends to the re-entry date.
+- **Effect on the final balance.** Start with buy-and-hold, insert the first spell and replay the whole account. Add the second spell, replay again, and continue. The change from each preceding run is that spell's dollar contribution. Do the same with maximum drawdown and with zero costs. The differences telescope to the observed portfolio gap. Earlier changes affect the capital available for later trades, so the allocation of compounding to individual spells depends on this chronological order. These are retrospective contributions under the simulated execution assumptions.
+- **Read the charts.** The upper chart uses trading dates. Each bar below it represents one exit in date order and the bar height gives its dollar effect on the ending balance. Select a dot, bar or date to inspect both portfolios. The year selector expands crowded periods. The JSON contains every spell and all four daily account paths.
+
+[Download the attribution](../public/research/spy-spells.json) · [Inspect the chart](https://chencharl.github.io/Trade_bo/#lab)
+
 ## Reproduction
 
 Use Python 3.12. The optional research dependencies have no effect on the browser app. Fetch the source files locally and retain the normalized input for future reproduction. The Yahoo chart request fixes both date endpoints. The State Street workbook is filtered to SPY within the same period. The 8,497 sessions match the XNYS calendar. All 136 issuer ex-dates match the vendor event dates. The study uses the issuer’s amounts throughout, including three 1990s amounts that differ by more than half a cent from the vendor events. Features use only locally accumulated past distributions.
@@ -48,6 +80,9 @@ python scripts/spy_source.py /tmp/spy.csv
 OPENBLAS_NUM_THREADS=1 python scripts/spy_study.py fit /tmp/spy.csv /tmp/spy-model.json
 python scripts/spy_study.py score /tmp/spy.csv public/research/spy-model.json /tmp/spy-report.json
 python scripts/verify_spy.py /tmp/spy.csv public/research/spy-model.json /tmp/spy-report.json --check-time
+python scripts/spy_attribution.py /tmp/spy.csv public/research/spy-daily.json /tmp/spy-spells.json
+python scripts/verify_spy_spells.py /tmp/spy.csv public/research/spy-daily.json /tmp/spy-spells.json
+cmp /tmp/spy-spells.json public/research/spy-spells.json
 ```
 
 The normalized CSV SHA-256 is `4e5edc91eca2a0a358e8d5bea7b20d6b3810642c3f2eb014fff9616936df94a1`. Input revisions trigger a hash mismatch. To use matching archived provider files, pass `--prices ORIGINAL_CHART.json --issuer ORIGINAL_DISTRIBUTIONS.xlsx` to the source command. The published [model artifact](../public/research/spy-model.json) and [report](../public/research/spy-daily.json) contain the fold returns, weights and training-only scaler, derived account values and simulated orders. Exact refit bytes may depend on numerical libraries. Using the published weights fixes the predictor across replays.

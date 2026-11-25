@@ -1,63 +1,36 @@
 # TradeBo
 
-An open-source workspace for portfolio simulation and investment-strategy research.
+I built TradeBo to study one question: when a strategy sells to avoid a loss, does it buy back in time for the recovery? Strategy Lab follows the money from the signal at the close to the trade at the next open. You can see what staying in cash saved, what it cost, and how simply holding the market would have worked out.
 
-A personal project by [Chen Yang](https://github.com/Chencharl).
+**[Open Strategy Lab](https://chencharl.github.io/Trade_bo/#lab)** · [Read the SPY study](docs/STRATEGY_SPY_DAILY.md) · [Research plan](docs/STRATEGY_RESEARCH.md#what-we-test-next)
 
-[**Open Atlas**](https://chencharl.github.io/Trade_bo/) · [**Open Strategy Lab**](https://chencharl.github.io/Trade_bo/#lab) · [Research roadmap](docs/STRATEGY_RESEARCH.md)
+## What happened with SPY?
 
-[SPY next-open backtest](https://chencharl.github.io/Trade_bo/#lab) compares a frozen neural network with original reversal, trend-filtered reversal and buy-and-hold on daily ETF prices. Inspect the equity curves and individual fills. [Protocol and results](docs/STRATEGY_SPY_DAILY.md)
+From January 2022 through October 2026, a neural model spent 69 trading days in cash. On a $10,000 account it finished **$273.95 ahead of buy-and-hold** after simulated fees and slippage. Two exits in April 2025 added $2,707.11 to the final balance. The other 62 together gave back $2,433.16.
 
-## What we have built
+The model still had a deeper loss from its peak than SPY, and a monthly trend filter finished $414.07 ahead of it. Click either April exit on the chart to compare the portfolios over those exact trading days. The model weights were fixed before the final test.
 
-- **Atlas:** a browser-based portfolio simulator for comparing allocations and market scenarios.
-- **Strategy Lab:** SPY holdout results, historical studies and a [monthly workbench](https://chencharl.github.io/Trade_bo/#lab-workbench) for testing eight rules on local data.
-- **Research desk:** a local Python-backed workspace for reviewing holdings, company information, and paper trade plans.
+[![The April 3 exit on the SPY equity chart, with avoided losses, trading costs and the trend filter's return.](docs/spy-spells.png)](https://chencharl.github.io/Trade_bo/#lab)
 
-Atlas and Strategy Lab work without an account. The Strategy Lab homepage shows a historical ETF backtest. Atlas simulations and the monthly workbench example use illustrative assumptions. The project does not execute trades.
+## Explore the project
 
-## What we are building toward
+- **[Strategy Lab](https://chencharl.github.io/Trade_bo/#lab)** compares the model with three baselines. Its [monthly workbench](https://chencharl.github.io/Trade_bo/#lab-workbench) lets you try eight rules on your own data. The [2008 and 2020 replays](docs/STRATEGY_CRISIS_REPLAYS.md) examine when strategies cut exposure during those sell-offs.
+- **[Atlas](https://chencharl.github.io/Trade_bo/)** lets you change a portfolio's allocation and simulate market shocks with illustrative assumptions.
+- **[Research desk](docs/RESEARCH_DESK.md)** runs locally for reviewing holdings and paper trade plans.
 
-A strategy research platform to investigate early signs of rising market risk and test whether exposure rules reduce severe losses, while measuring false alarms, missed declines, and foregone gains.
-
-The [product goal](docs/PRODUCT_GOAL.md) puts evaluator correctness, comparable benchmarks, and reproducibility before additional methods.
-
-<details>
-<summary>Product previews</summary>
-
-### Atlas
-
-![Atlas portfolio simulation](docs/atlas-preview.png)
-
-### Strategy Lab
-
-![Strategy Lab SPY holdout results](docs/spy-daily.png)
-
-</details>
+Strategy Lab and Atlas run in your browser without an account. All trades shown here are simulations.
 
 ## Run locally
 
-Requires Node.js 22.12 or newer.
+Use Node.js 22.12 or newer.
 
-```bash
+```sh
 git clone https://github.com/Chencharl/Trade_bo.git
 cd Trade_bo
 npm ci
 npm run dev
 ```
 
-The [research desk guide](docs/RESEARCH_DESK.md) covers the optional Python backend.
+[Reproduce the SPY results](docs/STRATEGY_SPY_DAILY.md#reproduction) · [Development and tests](CONTRIBUTING.md) · [MIT license](LICENSE) · [Data and third-party notices](docs/THIRD_PARTY.md)
 
-## Documentation
-
-- [Atlas model](docs/ATLAS_MODEL.md)
-- [Strategy Lab calculations and data](docs/STRATEGY_LAB.md)
-- [Short-term reversal filters and rolling test results](https://chencharl.github.io/Trade_bo/#lab-reversal-filters)
-- [Full-history study of all eight rules](https://chencharl.github.io/Trade_bo/#lab-full-history)
-- [2008 and 2020 historical replays](docs/STRATEGY_CRISIS_REPLAYS.md)
-- [Downside-warning research](docs/STRATEGY_RISK.md)
-- [Project comparison and roadmap](docs/STRATEGY_RESEARCH.md)
-- [Development and testing](CONTRIBUTING.md)
-- [Deployment workflow](.github/workflows/pages.yml)
-
-[MIT license](LICENSE) · [Third-party notices](docs/THIRD_PARTY.md)
+A personal project by [Chen Yang](https://github.com/Chencharl).

@@ -395,3 +395,236 @@
   font-size: 14px;
   color: #405670;
 }
+/* The overview links each closing-equity marker to a chronological attribution bar. */
+.spy-main .spy-pair {
+  display: grid;
+  grid-template-columns: minmax(140px, 0.8fr) 1fr 1fr;
+  align-items: center;
+  margin: 0 0 12px;
+  padding: 12px 16px;
+  border: 1px solid var(--lab-line);
+  border-radius: 4px;
+}
+.spy-pair div {
+  border: 0;
+  border-left: 1px solid #cfdae6;
+  padding: 0 0 0 15px;
+}
+.spy-pair label {
+  grid-column: auto;
+  display: grid;
+}
+.spy-pair strong {
+  font-size: 23px;
+}
+.spy-pair p {
+  margin: 2px 0 0;
+}
+.spy-overview {
+  grid-template-columns: minmax(0, 1.8fr) minmax(285px, 1fr);
+  scroll-margin-top: 10px;
+}
+.spy-legend select {
+  margin-left: auto;
+  padding: 2px 5px;
+  font-size: 12px;
+}
+.cash-plot {
+  position: relative;
+  margin-top: 8px;
+}
+.spy-main button.cash-hit {
+  position: absolute;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  border-radius: 0;
+}
+.spy-main button.cash-hit:hover,
+.spy-main button.cash-hit:focus-visible {
+  background: rgba(43, 78, 115, 0.09);
+}
+.spy-plot text.cash-axis-title {
+  font:
+    500 12px 'DM Sans',
+    sans-serif;
+  fill: #3b536e;
+}
+.spy-plot text.cash-axis-value {
+  fill: #203f60;
+  font-weight: 600;
+  paint-order: stroke;
+  stroke: white;
+  stroke-width: 3px;
+}
+.cash-key {
+  margin: 1px 0 8px;
+  line-height: 1.4;
+}
+.cash-key,
+.cash-picker,
+.cash-caption > div > span,
+.cash-moves span {
+  font-size: 12px;
+  color: #415b76;
+}
+.cash-dot {
+  cursor: pointer;
+  stroke-width: 1.2px;
+}
+.cash-detail {
+  background: #f0f4f9;
+  border-left: 1px solid var(--lab-line);
+  padding: 18px 20px;
+}
+.cash-picker {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 17px;
+}
+.cash-caption {
+  border-bottom: 1px solid #c6d2e0;
+  padding-bottom: 10px;
+  display: grid;
+  gap: 9px;
+}
+.cash-caption h3,
+.cash-caption strong {
+  font:
+    600 19px/1.25 'Space Grotesk',
+    sans-serif;
+  letter-spacing: -0.04em;
+  margin: 3px 0 0;
+  color: #253d5a;
+}
+.cash-caption h3 span {
+  color: #67809b;
+  font-size: 15px;
+}
+.cash-caption strong {
+  font-size: 28px;
+  display: block;
+  font-variant-numeric: tabular-nums;
+}
+.cash-caption .cash-plus {
+  color: #176352;
+}
+.cash-caption .cash-minus {
+  color: #8c4429;
+}
+.cash-moves {
+  display: grid;
+  gap: 5px;
+  padding: 10px 0;
+  border-bottom: 1px solid #c6d2e0;
+}
+.cash-moves div {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+}
+.cash-moves b {
+  font:
+    500 14px 'IBM Plex Mono',
+    monospace;
+  color: #253d5a;
+}
+.cash-inspector p {
+  margin: 9px 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.cash-inspector details {
+  font-size: 12px;
+  color: #405976;
+}
+.cash-notes {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+  margin: 20px 0;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--lab-line);
+}
+.cash-notes h3 {
+  font:
+    600 17px/1.25 'Space Grotesk',
+    sans-serif;
+  margin: 0 0 5px;
+}
+.cash-notes p {
+  font-size: 14px;
+  line-height: 1.55;
+  margin: 3px 0;
+}
+.spy-main button.cash-jump {
+  padding: 0;
+  background: transparent;
+  border: 0;
+  font: inherit;
+  color: #2b537b;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+@media (max-width: 800px) {
+  .spy-overview {
+    display: block;
+  }
+  .cash-detail {
+    border-left: 0;
+    border-top: 1px solid var(--lab-line);
+  }
+  .cash-picker {
+    margin-bottom: 6px;
+  }
+  .cash-caption {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .cash-notes {
+    grid-template-columns: 1fr;
+    gap: 13px;
+  }
+}
+@media (max-width: 600px) {
+  .spy-main .spy-pair {
+    grid-template-columns: 1fr 1fr;
+    gap: 9px;
+    padding: 10px;
+  }
+  .spy-pair label {
+    grid-column: 1/-1;
+    display: flex;
+  }
+  .spy-pair div {
+    padding: 0;
+    border: 0;
+  }
+  .spy-pair strong {
+    font-size: 20px;
+  }
+  .cash-detail {
+    padding: 12px;
+  }
+}
+
+.cash-mobile-readout {
+  display: none;
+}
+@media (max-width: 800px) {
+  .cash-mobile-readout {
+    display: block;
+    background: #edf2f8;
+    padding: 5px 8px;
+    border-left: 2px solid #54759a;
+    font-size: 12px;
+    color: #294360;
+  }
+}

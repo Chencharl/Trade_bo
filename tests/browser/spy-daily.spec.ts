@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test'
 import AxeBuilder from '@axe-core/playwright'
 import { readFileSync } from 'node:fs'
-import type { SpyReport } from '../../src/lab/SpyDailyPage'
+import type { SpyReport } from '../../src/lab/spyDaily'
 const base = process.env.TRADEBO_SPY_URL || '/'
 const r = JSON.parse(readFileSync('public/research/spy-daily.json', 'utf8')) as SpyReport
 test('Strategy Lab opens on actual SPY outcomes, compares all baselines and explains next-open fills', async ({
@@ -26,7 +26,7 @@ test('Strategy Lab opens on actual SPY outcomes, compares all baselines and expl
     await expect(panel).toContainText((delta < 0 ? '−' : '+') + Math.abs(delta * 100).toFixed(2))
   }
   await page.getByRole('button', { name: 'Drawdown', exact: true }).click()
-  const cursor = page.getByRole('slider', { name: 'Inspect week' })
+  const cursor = page.getByRole('slider', { name: 'Inspect close' })
   await cursor.focus()
   await cursor.press('Home')
   await expect(cursor).toHaveAttribute('aria-valuetext', r.start)
