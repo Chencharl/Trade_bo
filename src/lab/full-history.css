@@ -1,0 +1,137 @@
+.history-study {
+  max-width: 1210px;
+}
+.history-period,
+.history-tools,
+.history-switch,
+.history-tools label {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+.history-study .history-period {
+  padding: 10px 0;
+  border-block: 1px solid #d6e0e6;
+  margin: 5px 0 20px;
+}
+.history-period span {
+  color: #42566b;
+  font-size: 13px;
+}
+.history-tools {
+  justify-content: space-between;
+}
+.history-switch {
+  gap: 3px;
+}
+.history-switch button[aria-pressed='true'] {
+  background: #203a53;
+  color: white;
+}
+.history-tools label,
+.history-caption {
+  font-size: 13px;
+  color: #455c70;
+}
+.history-scroll {
+  max-width: 100%;
+  overflow: auto;
+}
+.history-study table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  text-align: right;
+  white-space: nowrap;
+  font:
+    13px/1.48 'IBM Plex Mono',
+    monospace;
+}
+.history-study th,
+.history-study td {
+  padding: 8px 11px;
+  border-bottom: 1px solid #dce4e9;
+}
+.history-study thead th,
+.history-study tbody th {
+  font:
+    600 13px/1.4 'DM Sans',
+    sans-serif;
+}
+.history-study th:first-child {
+  text-align: left;
+  position: sticky;
+  left: 0;
+  background: white;
+}
+.history-study thead th {
+  background: #e7eff3;
+  color: #304b5d;
+}
+.history-study thead th:first-child {
+  background: #e7eff3;
+}
+.history-study .history-selected :is(td, th) {
+  background: #edf5f7;
+}
+.history-study th button {
+  border: 0;
+  padding: 4px 0;
+  background: transparent;
+  text-align: left;
+  color: #224d64;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  font-weight: 650;
+}
+.history-evidence {
+  margin: 26px 0;
+  border-top: 3px solid #27546b;
+  padding-top: 16px;
+}
+.history-readout {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  padding: 14px 0;
+  border-block: 1px solid #d6e0e6;
+}
+.history-readout span,
+.history-readout b {
+  display: block;
+}
+.history-readout span {
+  color: #455c70;
+  font-size: 12px;
+}
+.history-readout b {
+  font:
+    600 20px 'IBM Plex Mono',
+    monospace;
+}
+.history-download {
+  padding-top: 14px;
+}
+.history-study details summary {
+  cursor: pointer;
+}
+@media (max-width: 670px) {
+  .history-readout {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .history-study th,
+  .history-study td {
+    padding: 6px;
+  }
+  .history-study .history-period {
+    gap: 4px 12px;
+  }
+  .history-tools {
+    align-items: flex-start;
+  }
+  .history-study th:first-child {
+    max-width: 135px;
+    white-space: normal;
+  }
+}

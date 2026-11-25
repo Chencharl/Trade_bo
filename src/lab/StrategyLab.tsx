@@ -317,7 +317,8 @@ export default function StrategyLab() {
           <p>Monthly equity &amp; cash strategies</p>
         </div>
         <nav className="lab-history-links" aria-label="Open historical replays">
-          <strong>Historical replays</strong>
+          <strong>Market history</strong>
+          <a href="#lab-full-history">Full-history study</a>
           {['2008', '2020'].map((year, i) => (
             <a
               key={year}

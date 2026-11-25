@@ -10,6 +10,8 @@ The [downside-warning diagnostic](STRATEGY_RISK.md) is a separate derived analys
 
 The [2008 and 2020 historical replays](STRATEGY_CRISIS_REPLAYS.md) use a verified French snapshot and show the opening decision, lagged signal date, monthly return gap and trading fees.
 
+The [full-history study](STRATEGY_FULL_HISTORY.md) compares all eight rules on the entire pinned series and counts distinct pre-decline cuts, false alarms, missed events and after-cost rebound gaps.
+
 ## Inputs and provenance
 
 Each row has a month, a market total return, and a cash total return. Returns are simple decimal returns: `0.02` means 2%; `-0.03` means -3%. Cash is a return-bearing sleeve, not an assumed zero-return balance or a bond index.
