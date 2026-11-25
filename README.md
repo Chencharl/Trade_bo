@@ -50,6 +50,7 @@ The [research desk guide](docs/RESEARCH_DESK.md) covers the optional Python back
 
 - [Atlas model](docs/ATLAS_MODEL.md)
 - [Strategy Lab calculations and data](docs/STRATEGY_LAB.md)
+- [2008 and 2020 historical replays](docs/STRATEGY_CRISIS_REPLAYS.md)
 - [Downside-warning research](docs/STRATEGY_RISK.md)
 - [Project comparison and roadmap](docs/STRATEGY_RESEARCH.md)
 - [Development and testing](CONTRIBUTING.md)

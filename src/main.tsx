@@ -5,12 +5,15 @@ import Atlas from './atlas/Atlas'
 
 const ResearchDesk = lazy(() => import('./App'))
 const StrategyLab = lazy(() => import('./lab/StrategyLab'))
+const HistoricalReplay = lazy(() => import('./lab/HistoricalReplay'))
 const currentRoute = () =>
-  window.location.hash.startsWith('#lab')
-    ? 'lab'
-    : window.location.hash === '#research'
-      ? 'research'
-      : 'atlas'
+  /^#lab-history-(2008|2020)(?:\?|$)/.test(window.location.hash)
+    ? window.location.hash
+    : window.location.hash.startsWith('#lab')
+      ? 'lab'
+      : window.location.hash === '#research'
+        ? 'research'
+        : 'atlas'
 
 function ResearchEntry() {
   const [available, setAvailable] = useState(false)
@@ -79,8 +82,14 @@ function Root() {
     window.addEventListener('hashchange', navigate)
     return () => window.removeEventListener('hashchange', navigate)
   }, [])
+  const historical = route.startsWith('#lab-history-')
   return (
     <>
+      {historical && (
+        <Suspense fallback={<p>Opening historical replay…</p>}>
+          <HistoricalReplay route={route} />
+        </Suspense>
+      )}
       <div hidden={route !== 'atlas'}>
         <Atlas />
       </div>

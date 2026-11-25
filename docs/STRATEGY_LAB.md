@@ -8,6 +8,8 @@ The implementation has its own `LAB_VERSION`. A change to numerical behavior, ru
 
 The [downside-warning diagnostic](STRATEGY_RISK.md) is a separate derived analysis with version `risk-audit-1`. It reads the existing `lab-2` inputs and ledgers; its fixed loss-window definitions leave allocation rules, evaluation results, and the report schema unchanged. Use `npm run audit:risk -- report.json` to verify the input report and reproduce the diagnostic.
 
+The [2008 and 2020 historical replays](STRATEGY_CRISIS_REPLAYS.md) use a verified French snapshot and show the opening decision, lagged signal date, monthly return gap and trading fees.
+
 ## Inputs and provenance
 
 Each row has a month, a market total return, and a cash total return. Returns are simple decimal returns: `0.02` means 2%; `-0.03` means -3%. Cash is a return-bearing sleeve, not an assumed zero-return balance or a bond index.
