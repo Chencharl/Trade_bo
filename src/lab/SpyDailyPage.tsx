@@ -1,196 +1,27 @@
 import { useState, useEffect, useRef } from 'react'
 import LabHeader from './LabHeader'
+import SpyEquityChart from './SpyEquityChart'
+import { AttributionNotes, CashInspector } from './SpyCashSpells'
+import {
+  keys,
+  names,
+  cash,
+  money,
+  signedMoney,
+  diff,
+  pct,
+  type CashStudy,
+  type Rule,
+  type Spell,
+  type SpyReport,
+  type Text,
+} from './spyDaily'
 import './lab.css'
 import './month-view.css'
 import './spy-daily.css'
 
-const keys = ['model', 'original', 'trend', 'market'] as const
-type Rule = (typeof keys)[number]
-type Values = Record<Rule, number>
-type Metric = {
-  ending: number
-  total: number
-  cagr: number
-  drawdown: number
-  peak: string
-  trough: string
-  commission: number
-  slippage: number
-  orders: number
-  stockDays: number
-}
-type Trade = {
-  date: string
-  signal: string
-  side: 'buy' | 'sell' | 'reinvest'
-  open: number
-  fill: number
-  quantity: number
-  commission: number
-  slippage: number
-  probability: number | null
-}
-type Mark = { date: string; wealth: Values; loss: Values }
-export type SpyReport = {
-  version: string
-  start: string
-  end: string
-  capital: number
-  sessions: number
-  modelHash: string
-  metrics: Record<Rule, Metric>
-  chart: Mark[]
-  annual: { end: string; net: Values }[]
-  trades: Record<Rule, Trade[]>
-  training: {
-    cutoff: string
-    firstSignal: string
-    lastLabel: string
-    examples: number
-    epochs: number
-  }
-  development: {
-    folds: { start: string; end: string; firstSignal: string; lastLabel: string; returns: Values }[]
-  }
-}
-type Text = (en: string, zh: string) => string
-const pct = (n: number) => (100 * n).toFixed(2) + '%'
-const diff = (n: number) => (n < 0 ? '−' : '+') + Math.abs(100 * n).toFixed(2)
-const cash = (v: number, digits = 0) =>
-  '$' + v.toLocaleString('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits })
 const url = './research/spy-daily.json'
 const method = 'https://github.com/Chencharl/Trade_bo/blob/main/docs/STRATEGY_SPY_DAILY.md'
-function names(t: Text): Record<Rule, string> {
-  return {
-    model: t('Neural model', '神经网络'),
-    original: t('Original reversal', '原始反转'),
-    trend: t('Trend filter', '趋势过滤'),
-    market: t('Buy & hold SPY', '持有 SPY'),
-  }
-}
-function Curve({ r, baseline, t }: { r: SpyReport; baseline: Rule; t: Text }) {
-  const [loss, setLoss] = useState(false),
-    [hover, setHover] = useState<number | null>(null)
-  const frame = useRef<HTMLDivElement>(null),
-    [width, setWidth] = useState(500)
-  useEffect(() => {
-    const el = frame.current
-    if (!el) return
-    const ro = new ResizeObserver(([entry]) => setWidth(Math.max(200, entry.contentRect.width)))
-    ro.observe(el)
-    return () => ro.disconnect()
-  }, [])
-  const points = r.chart,
-    last = points.length - 1,
-    i = hover ?? last,
-    labels = names(t)
-  const v = (k: Rule, j: number) => (loss ? -points[j].loss[k] : points[j].wealth[k])
-  const vals = points.flatMap((_, j) => [v('model', j), v(baseline, j)])
-  const min = Math.min(loss ? 0 : r.capital, ...vals),
-    max = Math.max(loss ? 0 : r.capital, ...vals)
-  const unit = loss ? 0.05 : Math.max(100, 10 ** Math.floor(Math.log10(Math.max(1, max - min) / 3)))
-  const step = Math.max(unit, Math.ceil((max - min) / 4 / unit) * unit)
-  const low = Math.floor(min / step) * step,
-    high = Math.max(low + step, Math.ceil(max / step) * step)
-  const a = loss ? 42 : 50,
-    b = width - 10,
-    top = 15,
-    bottom = 169
-  const times = points.map((p) => Date.parse(p.date + 'T00:00:00Z'))
-  const x = (j: number) => a + ((b - a) * (times[j] - times[0])) / (times[last] - times[0])
-  const y = (z: number) => bottom - ((bottom - top) * (z - low)) / (high - low)
-  const path = (k: Rule) =>
-    points.map((_, j) => (j ? 'L' : 'M') + x(j).toFixed(2) + ',' + y(v(k, j)).toFixed(2)).join(' ')
-  const yearTicks = points
-    .flatMap((p, j) =>
-      j === 0 || p.date.slice(0, 4) !== points[j - 1].date.slice(0, 4) ? [j] : [],
-    )
-    .filter((_, idx) => width > 440 || idx % 2 === 0)
-  const value = (z: number) => (loss ? pct(z) : cash(z))
-  return (
-    <section className="spy-chart" aria-label={t('Portfolio chart', '组合走势图')}>
-      <div className="spy-chart-title">
-        <h2>
-          {loss ? t('Loss from peak', '距前高跌幅') : t('Growth of $10,000', '一万美元的走势')}
-        </h2>
-        <div className="spy-switch">
-          <button aria-pressed={!loss} onClick={() => setLoss(false)}>
-            {t('Value', '净值')}
-          </button>
-          <button aria-pressed={loss} onClick={() => setLoss(true)}>
-            {t('Drawdown', '回撤')}
-          </button>
-        </div>
-      </div>
-      <div className="spy-legend">
-        <span>
-          <i />
-          {labels.model}
-        </span>
-        <span>
-          <i />
-          {labels[baseline]}
-        </span>
-      </div>
-      <div className="spy-plot" ref={frame}>
-        <svg
-          role="img"
-          aria-label={t('Weekly closing portfolio paths', '组合每周收盘走势')}
-          viewBox={'0 0 ' + width + ' 195'}
-          onPointerMove={(e) => {
-            const rect = e.currentTarget.getBoundingClientRect(),
-              pos = ((e.clientX - rect.left) / rect.width) * width
-            let j = 0
-            while (j < last && Math.abs(x(j + 1) - pos) < Math.abs(x(j) - pos)) j++
-            setHover(j)
-          }}
-        >
-          {Array.from({ length: Math.round((high - low) / step) + 1 }, (_, k) => {
-            const z = low + step * k
-            return (
-              <g key={k}>
-                <line x1={a} x2={b} y1={y(z)} y2={y(z)} className="spy-grid" />
-                <text x={a - 6} y={y(z) + 4} textAnchor="end">
-                  {loss ? Math.round(z * 100) + '%' : '$' + z / 1000 + 'k'}
-                </text>
-              </g>
-            )
-          })}
-          {yearTicks.map((j) => (
-            <text key={j} x={x(j)} y="190" textAnchor={j ? 'middle' : 'start'}>
-              {points[j].date.slice(0, 4)}
-            </text>
-          ))}
-          <path d={path(baseline)} className="spy-reference" />
-          <path d={path('model')} className="spy-line" />
-          <line x1={x(i)} x2={x(i)} y1={top} y2={bottom} className="spy-cursor" />
-          <circle cx={x(i)} cy={y(v(baseline, i))} r="3" fill="#63788d" />
-          <circle cx={x(i)} cy={y(v('model', i))} r="3" fill="#4263cc" />
-        </svg>
-      </div>
-      <label className="spy-inspect">
-        <span>{t('Inspect week', '查看周末值')}</span>
-        <input
-          type="range"
-          min={0}
-          max={last}
-          value={i}
-          aria-valuetext={points[i].date}
-          onChange={(e) => setHover(Number(e.target.value))}
-        />
-      </label>
-      <div className="spy-readout">
-        <b>{points[i].date}</b>
-        <span>
-          {labels.model} <strong>{value(v('model', i))}</strong>
-        </span>
-        <span>
-          {labels[baseline]} <strong>{value(v(baseline, i))}</strong>
-        </span>
-      </div>
-    </section>
-  )
-}
 function Orders({ r, t }: { r: SpyReport; t: Text }) {
   const [rule, setRule] = useState<Rule>('model'),
     [index, setIndex] = useState(0)
@@ -284,8 +115,23 @@ function Orders({ r, t }: { r: SpyReport; t: Text }) {
     </section>
   )
 }
-function Findings({ r, t }: { r: SpyReport; t: Text }) {
+function Findings({ r, study, t }: { r: SpyReport; study: CashStudy; t: Text }) {
   const [baseline, setBaseline] = useState<Exclude<Rule, 'model'>>('market')
+  const es = study.spells.model
+  const [selected, setSelected] = useState<Spell>(() =>
+    es.reduce((best, s) => (s.endingEffect > best.endingEffect ? s : best)),
+  )
+  const panel = useRef<HTMLDivElement>(null)
+  const kind = study.spells.trend.includes(selected) ? 'trend' : 'model'
+  const choose = (s: Spell) => {
+    setSelected(s)
+    setBaseline('trend')
+  }
+  const jump = (s: Spell) => {
+    choose(s)
+    panel.current?.scrollIntoView({ block: 'start' })
+    panel.current?.focus({ preventScroll: true })
+  }
   const labels = names(t),
     m = r.metrics.model,
     b = r.metrics[baseline]
@@ -312,59 +158,92 @@ function Findings({ r, t }: { r: SpyReport; t: Text }) {
         </div>
         <h2>{t('SPY at the next open', 'SPY 次日开盘回测')}</h2>
         <p>
+          {t('The model spent ', '模型合计空仓 ')}
+          <b>{r.sessions - m.stockDays}</b>
+          {t(' sessions in cash across ', ' 个交易日，分成 ')}
+          <b>{es.length}</b>
           {t(
-            'After costs, the neural model turned $10,000 into ',
-            '计入手续费和滑点后，同样的 10,000 美元，神经网络期末为 ',
+            ' exits. On a $10,000 account, those exits added ',
+            ' 段。本金为 10,000 美元，这些减仓合计使期末净值比持有 SPY 高出 ',
           )}
-          <b>{cash(m.ending)}</b>
-          {t('. ', '，')}
-          {labels[baseline]} {t('ended at ', '为 ')}
-          <b>{cash(b.ending)}</b>
-          {t('.', '。')}
+          <b>{money(m.ending - r.metrics.market.ending)}</b>
+          {t(' over holding SPY.', '。')}
         </p>
       </section>
-      <div className="spy-overview">
-        <Curve r={r} t={t} baseline={baseline} />
-        <aside className="spy-pair" aria-label={t('Model comparison', '模型对比')}>
-          <label>
-            {t('Compare the model with', '模型对照组')}{' '}
+      <aside className="spy-pair" aria-label={t('Model comparison', '模型对比')}>
+        <label>
+          {t('Compare the model with', '模型对照组')}{' '}
+          <select
+            aria-label={t('Comparison portfolio', '对照组合')}
+            value={baseline}
+            onChange={(e) => setBaseline(e.target.value as typeof baseline)}
+          >
+            {(['market', 'original', 'trend'] as const).map((k) => (
+              <option key={k} value={k}>
+                {labels[k]}
+              </option>
+            ))}
+          </select>
+        </label>
+        <div>
+          <span>{t('Model return difference', '模型总收益差')}</span>
+          <strong>
+            {diff(m.total - b.total)} <small>{t('pp', '个百分点')}</small>
+          </strong>
+          <p>
+            {pct(m.total)} · {labels[baseline]} {pct(b.total)}
+          </p>
+        </div>
+        <div>
+          <span>
+            {m.drawdown <= b.drawdown
+              ? t('Model reduced the largest loss by', '模型最大回撤少了')
+              : t('Model increased the largest loss by', '模型最大回撤多了')}
+          </span>
+          <strong>
+            {(100 * Math.abs(m.drawdown - b.drawdown)).toFixed(2)}{' '}
+            <small>{t('pp', '个百分点')}</small>
+          </strong>
+          <p>
+            {pct(m.drawdown)} · {labels[baseline]} {pct(b.drawdown)}
+          </p>
+        </div>
+      </aside>
+      <div className="spy-overview" ref={panel} tabIndex={-1}>
+        <SpyEquityChart
+          r={r}
+          study={study}
+          selected={selected}
+          choose={choose}
+          t={t}
+          baseline={baseline}
+        />
+        <div className="cash-detail">
+          <label className="cash-picker">
+            {t('Choose an exit', '选择空仓区间')}
             <select
-              aria-label={t('Comparison portfolio', '对照组合')}
-              value={baseline}
-              onChange={(e) => setBaseline(e.target.value as typeof baseline)}
+              value={kind + selected.exit}
+              onChange={(e) => {
+                const opt = e.target.selectedOptions[0],
+                  list = opt.dataset.rule === 'trend' ? study.spells.trend : es
+                choose(list[Number(opt.dataset.index)])
+              }}
             >
-              {(['market', 'original', 'trend'] as const).map((k) => (
-                <option key={k} value={k}>
-                  {labels[k]}
-                </option>
+              {(['model', 'trend'] as const).map((k) => (
+                <optgroup key={k} label={labels[k]}>
+                  {study.spells[k].map((s, j) => (
+                    <option key={s.exit} data-rule={k} data-index={j} value={k + s.exit}>
+                      {s.exit} · {signedMoney(s.endingEffect)}
+                    </option>
+                  ))}
+                </optgroup>
               ))}
             </select>
           </label>
-          <div>
-            <span>{t('Model return difference', '模型总收益差')}</span>
-            <strong>
-              {diff(m.total - b.total)} <small>{t('pp', '个百分点')}</small>
-            </strong>
-            <p>
-              {pct(m.total)} · {labels[baseline]} {pct(b.total)}
-            </p>
-          </div>
-          <div>
-            <span>
-              {m.drawdown <= b.drawdown
-                ? t('Model reduced the largest loss by', '模型最大回撤少了')
-                : t('Model increased the largest loss by', '模型最大回撤多了')}
-            </span>
-            <strong>
-              {(100 * Math.abs(m.drawdown - b.drawdown)).toFixed(2)}{' '}
-              <small>{t('pp', '个百分点')}</small>
-            </strong>
-            <p>
-              {pct(m.drawdown)} · {labels[baseline]} {pct(b.drawdown)}
-            </p>
-          </div>
-        </aside>
+          <CashInspector s={selected} t={t} end={r.end} kind={kind} />
+        </div>
       </div>
+      <AttributionNotes a={study} r={r} t={t} select={jump} />
       <section className="spy-results">
         <h2>{t('Four strategies on the same dates', '同一时段的四种策略')}</h2>
         <p className="spy-leaders">
@@ -422,8 +301,8 @@ function Findings({ r, t }: { r: SpyReport; t: Text }) {
         </p>
         <p className="spy-note">
           {t(
-            '¹ Largest loss from a previous high at daily closes. The chart samples weekly closes.',
-            '¹ 最大回撤取每日收盘净值相对先前高点的最大跌幅，图中按周显示收盘值。',
+            '¹ Largest loss from a previous high at daily closes. The chart shows daily closes.',
+            '¹ 最大回撤取每日收盘净值相对先前高点的最大跌幅，图中显示每日收盘值。',
           )}
         </p>
       </section>
@@ -486,6 +365,10 @@ function Findings({ r, t }: { r: SpyReport; t: Text }) {
         </table>
         <p>
           <a href={method}>{t('Protocol & reproduction', '方案与复算方法')}</a> ·{' '}
+          <a href="./research/spy-spells.json" download>
+            {t('Download cash spells', '下载逐段归因')}
+          </a>{' '}
+          ·{' '}
           <a href={url} download>
             {t('Download results and fills', '下载结果与成交明细')}
           </a>{' '}
@@ -509,21 +392,33 @@ export default function SpyDailyPage() {
     return navigator.language.startsWith('zh')
   })
   const t: Text = (en, cn) => (zh ? cn : en)
-  const [r, setR] = useState<SpyReport | null>(null),
+  const [reports, setReports] = useState<[SpyReport, CashStudy] | null>(null),
     [err, setErr] = useState(false),
     [attempt, retry] = useState(0)
   useEffect(() => {
     const c = new AbortController()
     setErr(false)
-    fetch(url, { signal: c.signal })
-      .then((res) => {
+    Promise.all(
+      [url, './research/spy-spells.json'].map(async (path) => {
+        const res = await fetch(path, { signal: c.signal })
         if (!res.ok) throw Error()
         return res.json()
-      })
-      .then((data) => {
-        if (data.version !== 'spy-open-1' || !data.chart?.length || !data.metrics?.market)
+      }),
+    )
+      .then(([r, study]) => {
+        if (
+          r.version !== 'spy-open-1' ||
+          !r.metrics?.market ||
+          study.version !== 'spy-spells-1' ||
+          study.start !== r.start ||
+          study.end !== r.end ||
+          study.daily?.length !== r.sessions ||
+          study.rules?.join(',') !== keys.join(',') ||
+          !study.spells?.model?.length ||
+          !study.spells?.trend?.length
+        )
           throw Error()
-        if (!c.signal.aborted) setR(data)
+        if (!c.signal.aborted) setReports([r, study])
       })
       .catch(() => {
         if (!c.signal.aborted) setErr(true)
@@ -551,8 +446,8 @@ export default function SpyDailyPage() {
             {zh ? 'English' : '中文'}
           </button>
         </div>
-        {r ? (
-          <Findings r={r} t={t} />
+        {reports ? (
+          <Findings r={reports[0]} study={reports[1]} t={t} />
         ) : err ? (
           <div role="alert">
             {t('Daily results could not load.', '日线回测载入失败。')}{' '}
