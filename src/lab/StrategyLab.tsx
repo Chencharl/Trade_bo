@@ -10,6 +10,7 @@ import type { BuildProvenance } from './report'
 import RiskAudit from './RiskAudit'
 import './lab.css'
 import './month-view.css'
+import './historical.css'
 
 type Evaluation = ReturnType<typeof evaluateLab>
 type Run = Evaluation['results'][number]
@@ -315,6 +316,24 @@ export default function StrategyLab() {
           <h1>Strategy Lab</h1>
           <p>Monthly equity &amp; cash strategies</p>
         </div>
+        <nav className="lab-history-links" aria-label="Open historical replays">
+          <strong>Historical replays</strong>
+          {['2008', '2020'].map((year, i) => (
+            <a
+              key={year}
+              href={
+                '#lab-history-' +
+                year +
+                '?rule=' +
+                config.selectedStrategy +
+                '&cost=' +
+                config.costBps
+              }
+            >
+              {i === 0 ? '2008 financial crisis' : '2020 COVID-19 sell-off'} ↗
+            </a>
+          ))}
+        </nav>
         <section className="lab-data" aria-label="Data source">
           <div className="lab-data-summary">
             <span className={`lab-source-tag ${dataset?.kind === 'imported' ? 'imported' : ''}`}>

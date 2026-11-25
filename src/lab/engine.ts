@@ -441,6 +441,32 @@ export function evaluateLab(rows: readonly MonthlyRow[], config: LabConfig): Lab
   ) as Record<StrategyId, number[]>
   const run = (id: StrategyId, start: number, end: number, cost = config.costBps) =>
     execute(rows, start, end, (month) => weights[id][month], cost)
+  // Expanding folds start at the same month. Read each candidate ledger once.
+  // A score at index i includes returns strictly before selection boundary i.
+  const trainingScores = new Map<StrategyId, Array<number | null>>()
+  for (const { id } of STRATEGIES) {
+    if (id === 'cash') continue
+    const history = run(id, WARMUP_MONTHS, holdoutStart).ledger
+    let sum = 0
+    let average = 0
+    let sumSquares = 0
+    const scores: Array<number | null> = []
+    for (let i = 0; i < history.length; i++) {
+      const end = WARMUP_MONTHS + i + 1
+      const n = i + 1
+      const excess = history[i].netReturn - rows[end - 1].cashReturn
+      sum += excess
+      const delta = excess - average
+      average += delta / n
+      sumSquares += delta * (excess - average)
+      if (end === holdoutStart || (end >= walkStart && (end - walkStart) % 12 === 0)) {
+        const volatility = Math.sqrt(Math.max(0, sumSquares / (n - 1)))
+        scores[end] = volatility === 0 ? null : (sum / n / volatility) * Math.sqrt(12)
+        if (scores[end] !== null) assertFiniteResult([scores[end]!])
+      }
+    }
+    trainingScores.set(id, scores)
+  }
   const choose = (end: number) => {
     // Cash abstention is the declared allocation policy when no candidate has
     // positive finite training excess Sharpe. It is not a significance test,
@@ -450,7 +476,7 @@ export function evaluateLab(rows: readonly MonthlyRow[], config: LabConfig): Lab
     let bestScore = 0
     for (const strategy of STRATEGIES) {
       if (strategy.id === 'cash') continue
-      const sharpe = run(strategy.id, WARMUP_MONTHS, end).metrics.sharpe
+      const sharpe = trainingScores.get(strategy.id)![end]
       const score = sharpe ?? -Infinity
       if (score > bestScore) {
         bestScore = score
