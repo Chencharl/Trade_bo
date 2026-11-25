@@ -89,9 +89,7 @@ test('Strategy Lab is directly accessible, discoverable from Atlas, and exports 
   })
   await page.goto('/#lab')
   await ready(page)
-  await expect(
-    page.getByRole('heading', { name: 'Test the rule. Show the evidence.' }),
-  ).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Strategy Lab' })).toBeVisible()
   await expect(page.getByText('SYNTHETIC TEACHING DATA', { exact: true })).toBeVisible()
   const comparison = page.getByRole('table', { name: 'Strategy comparison' })
   await expect(comparison.locator('tbody tr')).toHaveCount(8)
@@ -514,4 +512,82 @@ test('declining input abstains in Cash and reports the actual partial-fold test 
       .getByRole('rowheader', { name: 'Frozen: Cash', exact: true }),
   ).toBeVisible()
   expect((await verifyLabReport(exported)).calculationMatches).toBe(true)
+})
+
+test('switching rules exposes same-month differences against the previous rule and reconciles both ledgers', async ({
+  page,
+}) => {
+  await page.goto('/#lab')
+  await ready(page)
+  const panel = page.getByRole('region', { name: 'Monthly strategy comparison' })
+  const comparison = panel.getByLabel('Comparison strategy')
+  await expect(comparison).toHaveValue('market')
+  await page.getByRole('button', { name: 'Inspect Cash', exact: true }).click()
+  await ready(page)
+  await expect(comparison).toHaveValue('trend')
+  const exported = await report(page)
+  const cash = exported.evaluation.results.find((r) => r.id === 'cash')!
+  const trend = exported.evaluation.results.find((r) => r.id === 'trend')!
+  const download = page.waitForEvent('download')
+  await panel.getByRole('button', { name: 'Download 60 months (CSV)' }).click()
+  const file = await download
+  expect(file.suggestedFilename()).toBe('tradebo-cash-vs-trend.csv')
+  const [headers, ...records] = (await downloadBytes(file))
+    .toString()
+    .trim()
+    .split('\n')
+    .map((line) => line.split(','))
+  expect(records).toHaveLength(60)
+  for (const [i, values] of records.entries()) {
+    const record = Object.fromEntries(headers.map((key, j) => [key, values[j]]))
+    expect(record.month).toBe(cash.ledger[i].date)
+    expect(record.data_sha256).toBe(exported.dataset.dataSha256)
+    expect(record.reference).toBe('trend')
+    expect(record.strategy).toBe('cash')
+    expect(Number(record.cost_change_bp)).toBeCloseTo(
+      (cash.ledger[i].costFraction - trend.ledger[i].costFraction) * 10000,
+      10,
+    )
+    expect(Number(record.drawdown_change_pp)).toBeCloseTo(
+      (cash.ledger[i].drawdown - trend.ledger[i].drawdown) * 100,
+      10,
+    )
+  }
+
+  const cells = panel.getByRole('group').getByRole('button')
+  await expect(cells).toHaveCount(60)
+  const labels = await cells.evaluateAll((items) =>
+    items.map((item) => item.getAttribute('aria-label')),
+  )
+  const sign = (value: number) =>
+    (Number(value.toFixed(2)) > 0 ? '+' : '') + (Number(value.toFixed(2)) || 0).toFixed(2)
+  for (const [i, row] of cash.ledger.entries()) {
+    const base = trend.ledger[i]
+    expect(labels[i]).toContain(
+      'drawdown ' +
+        sign((row.drawdown - base.drawdown) * 100) +
+        ' pp, cost ' +
+        sign((row.costFraction - base.costFraction) * 10000) +
+        ' bp',
+    )
+  }
+  await panel.getByRole('button', { name: /Largest cost gap/ }).click()
+  const details = panel.getByRole('table', { name: 'Values for selected month' })
+  await expect(details.getByRole('row', { name: /Trading cost/ })).toContainText('10.00 bp')
+  await expect(details.getByRole('row', { name: /Trading cost/ })).toContainText('-10.00 bp')
+  const active = panel.getByRole('button', { pressed: true })
+  await active.focus()
+  await active.press('End')
+  await expect(panel.getByRole('heading', { name: 'Dec 2025' })).toBeVisible()
+  await comparison.selectOption('balanced')
+  await page.getByRole('slider', { name: /One-way trading cost/ }).press('Home')
+  await ready(page)
+  await expect(comparison).toHaveValue('balanced')
+  await expect(panel.getByRole('button', { name: /Largest cost gap/ })).toBeDisabled()
+  await page.setViewportSize({ width: 320, height: 820 })
+  await page.getByLabel('Inspect strategy', { exact: true }).selectOption('momentum')
+  await ready(page)
+  await expect(comparison).toHaveValue('cash')
+  await expect(details.getByRole('columnheader', { name: 'Absolute momentum' })).toBeVisible()
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
 })
