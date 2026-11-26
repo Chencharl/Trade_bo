@@ -14,13 +14,12 @@ def near(actual, expected):
         raise AssertionError((actual, expected))
 
 
-def account(bars, cash_days, costs):
+def account(bars, cash_days, fee=D(".0001"), slip=D(".0002")):
     nav = peak = D(10000)
     qty = worst = D(0)
     entitlements = []
     history = []
     previous_close = bars[0][1]
-    fee, slip = (D(".0001"), D(".0002")) if costs else (D(0), D(0))
     for date, op, close, dividend, payable in bars:
         nav += qty * (op + dividend - previous_close)
         before = nav
@@ -78,15 +77,15 @@ def verify(data, report, spells):
                 order = next(fills, None)
             if not held:
                 cash[k].add(date)
-        nav, dd, books[k] = account(bars, cash[k], True)
+        nav, dd, books[k] = account(bars, cash[k])
         near(nav, r["metrics"][k]["ending"])
         near(dd, r["metrics"][k]["drawdown"])
         for row, ledger in zip(a["daily"], books[k], strict=True):
             near(row[col], ledger[-1])
     for k, events in a["spells"].items():
         added = set()
-        nav, dd, _ = account(bars, added, True)
-        gross, _, _ = account(bars, added, False)
+        nav, dd, _ = account(bars, added)
+        gross, _, _ = account(bars, added, D(0), D(0))
         for s in events:
             left = days.index(s["exit"])
             right = days.index(s["reentry"]) if s["reentry"] else len(days)
@@ -117,8 +116,8 @@ def verify(data, report, spells):
                 near(s[key]["net"], close / book[left][0] - 1)
                 near(s[key]["commission"], sum(d[2] for d in book[left : right + 1]))
                 near(s[key]["slippage"], sum(d[3] for d in book[left : right + 1]))
-            now, loss, _ = account(bars, added, True)
-            free, _, _ = account(bars, added, False)
+            now, loss, _ = account(bars, added)
+            free, _, _ = account(bars, added, D(0), D(0))
             near(s["endingEffect"], now - nav)
             near(s["drawdownEffect"], loss - dd)
             near(s["grossEffect"], free - gross)

@@ -10,7 +10,13 @@ From January 2022 through October 2026, a neural model spent 69 trading days in 
 
 The model still had a deeper loss from its peak than SPY, and a monthly trend filter finished $414.07 ahead of it. Click either April exit on the chart to compare the portfolios over those exact trading days. The model weights were fixed before the final test.
 
-[![The April 3 exit on the SPY equity chart, with avoided losses, trading costs and the trend filter's return.](docs/spy-spells.png)](https://chencharl.github.io/Trade_bo/#lab)
+## How much can each trade cost?
+
+We replayed the same 64 exits while changing commission and slippage independently. At the original mix of one part commission to two parts slippage, the model’s lead disappeared at **1.10 bp per side against the trend filter** and **4.26 bp against holding SPY**. The original test charged 3 bp per side, between the two thresholds. One basis point is 0.01%.
+
+With slippage held at 2 bp, even zero commission left the model behind trend. Against holding SPY, it could pay about 2.26 bp in commission before its advantage disappeared. [Change the two costs in Strategy Lab](https://chencharl.github.io/Trade_bo/#lab-spy-costs).
+
+[![Two curves cross the zero-dollar line at 1.10 and 4.26 basis points. The original 3 bp test lies between them.](docs/spy-costs.png)](https://chencharl.github.io/Trade_bo/#lab-spy-costs)
 
 ## Explore the project
 

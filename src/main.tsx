@@ -12,7 +12,7 @@ const ReversalFilterStudy = lazy(() => import('./lab/ReversalFilterStudy'))
 const FullHistoryStudy = lazy(() => import('./lab/FullHistoryStudy'))
 const HistoricalReplay = lazy(() => import('./lab/HistoricalReplay'))
 const currentRoute = () =>
-  ['#lab', '#lab-spy-daily'].includes(window.location.hash)
+  ['#lab', '#lab-spy-daily', '#lab-spy-costs'].includes(window.location.hash)
     ? 'daily'
     : window.location.hash === '#lab-timing-test' ||
         window.location.hash === '#lab-exposure' ||

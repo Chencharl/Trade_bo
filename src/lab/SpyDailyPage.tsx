@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import LabHeader from './LabHeader'
+import SpyCostStudy from './SpyCostStudy'
 import SpyEquityChart from './SpyEquityChart'
 import { AttributionNotes, CashInspector } from './SpyCashSpells'
 import {
@@ -244,6 +245,7 @@ function Findings({ r, study, t }: { r: SpyReport; study: CashStudy; t: Text }) 
         </div>
       </div>
       <AttributionNotes a={study} r={r} t={t} select={jump} />
+      <SpyCostStudy t={t} sourceHash={study.sourceHash} />
       <section className="spy-results">
         <h2>{t('Four strategies on the same dates', '同一时段的四种策略')}</h2>
         <p className="spy-leaders">
@@ -431,6 +433,7 @@ export default function SpyDailyPage() {
       <main className="lab-main spy-main">
         <div className="spy-mast">
           <h1>Strategy Lab</h1>
+          <a href="#lab-spy-costs">{t('Trading costs', '交易成本')}</a>
           <a href="#lab-workbench">{t('Monthly workbench', '月度回测工作台')} ↗</a>
           <button
             lang={zh ? 'en' : 'zh-CN'}

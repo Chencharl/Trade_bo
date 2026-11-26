@@ -68,6 +68,8 @@ Dollar differences use unrounded balances. Trading friction and the subsequent c
 
 [Download the attribution](../public/research/spy-spells.json) · [Inspect the chart](https://chencharl.github.io/Trade_bo/#lab)
 
+The [cost sensitivity study](STRATEGY_SPY_COSTS.md) holds every signal fixed and tests where the model loses its lead over each baseline.
+
 ## Reproduction
 
 Use Python 3.12. The optional research dependencies have no effect on the browser app. Fetch the source files locally and retain the normalized input for future reproduction. The Yahoo chart request fixes both date endpoints. The State Street workbook is filtered to SPY within the same period. The 8,497 sessions match the XNYS calendar. All 136 issuer ex-dates match the vendor event dates. The study uses the issuer’s amounts throughout, including three 1990s amounts that differ by more than half a cent from the vendor events. Features use only locally accumulated past distributions.
