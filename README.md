@@ -2,7 +2,9 @@
 
 I built TradeBo to study one question: when a strategy sells to avoid a loss, does it buy back in time for the recovery? Strategy Lab follows the money from the signal at the close to the trade at the next open. You can see what staying in cash saved, what it cost, and how simply holding the market would have worked out.
 
-**[Open Strategy Lab](https://chencharl.github.io/Trade_bo/#lab)** · [Read the SPY study](docs/STRATEGY_SPY_DAILY.md) · [Research plan](docs/STRATEGY_RESEARCH.md#what-we-test-next)
+**[Follow the SPY forward test](https://chencharl.github.io/Trade_bo/#lab-forward)** · [Explore the historical test](https://chencharl.github.io/Trade_bo/#lab)
+
+Three simulated accounts start with $10,000 each. One follows the frozen model, one follows the monthly trend filter, and one holds SPY. Starting November 30, 2026, TradeBo publishes each signal after the New York close and prices any resulting order at the next regular open. Open an exit to see how much of the decline the model avoided, how much of the rebound it missed, and which account came out ahead after costs. [Forward-test rules and public receipts](docs/STRATEGY_SPY_FORWARD.md)
 
 ## What happened with SPY?
 

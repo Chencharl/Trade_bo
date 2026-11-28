@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import LabHeader from './LabHeader'
+import SpyForward from './SpyForward'
 import SpyCostStudy from './SpyCostStudy'
 import SpyEquityChart from './SpyEquityChart'
 import { AttributionNotes, CashInspector } from './SpyCashSpells'
@@ -383,7 +384,7 @@ function Findings({ r, study, t }: { r: SpyReport; study: CashStudy; t: Text }) 
     </>
   )
 }
-export default function SpyDailyPage() {
+export default function SpyDailyPage({ forward = false }: { forward?: boolean }) {
   const [zh, setZh] = useState(() => {
     try {
       const s = localStorage.getItem('tradebo-study-language')
@@ -398,6 +399,7 @@ export default function SpyDailyPage() {
     [err, setErr] = useState(false),
     [attempt, retry] = useState(0)
   useEffect(() => {
+    if (forward) return
     const c = new AbortController()
     setErr(false)
     Promise.all(
@@ -426,13 +428,18 @@ export default function SpyDailyPage() {
         if (!c.signal.aborted) setErr(true)
       })
     return () => c.abort()
-  }, [attempt])
+  }, [attempt, forward])
   return (
     <div className="atlas-app lab-app" lang={zh ? 'zh-CN' : 'en'}>
       <LabHeader />
       <main className="lab-main spy-main">
         <div className="spy-mast">
           <h1>Strategy Lab</h1>
+          {forward ? (
+            <a href="#lab">{t('Historical test', '历史回测')}</a>
+          ) : (
+            <a href="#lab-forward">{t('Forward test', '前向测试')}</a>
+          )}
           <a href="#lab-spy-costs">{t('Trading costs', '交易成本')}</a>
           <a href="#lab-workbench">{t('Monthly workbench', '月度回测工作台')} ↗</a>
           <button
@@ -449,7 +456,9 @@ export default function SpyDailyPage() {
             {zh ? 'English' : '中文'}
           </button>
         </div>
-        {reports ? (
+        {forward ? (
+          <SpyForward t={t} />
+        ) : reports ? (
           <Findings r={reports[0]} study={reports[1]} t={t} />
         ) : err ? (
           <div role="alert">

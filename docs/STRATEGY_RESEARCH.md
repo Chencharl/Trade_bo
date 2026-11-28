@@ -8,7 +8,7 @@ Official repositories, documentation, and license files were checked on October 
 
 The [daily SPY study](STRATEGY_SPY_DAILY.md) follows a simple question from signal to result. When a rule steps aside, how much of the fall does it avoid and how much of the recovery does it miss? We have a frozen model, three same-date baselines and a ledger that explains each exit. April 2025 accounts for most of the model’s advantage over holding SPY. The [completed cost study](STRATEGY_SPY_COSTS.md) keeps those trades fixed. At the published fee-to-slippage mix, the model trailed trend above about 1.10 bp per side and trailed holding SPY above about 4.26 bp.
 
-**Next, collect fresh observations.** Keep the current weights, threshold and baselines. Record each signal with its data timestamp before the next open. At a cutoff specified in advance, publish every fill and cash spell, including missed rebounds. Any revised model gets a new experiment and a later evaluation period.
+The [forward test](https://chencharl.github.io/Trade_bo/#lab-forward) starts with the November 30, 2026 close. TradeBo publishes a timestamped signal each session and compares the frozen model with the same trend filter and holding SPY at the next open. Fills, costs, missed signals and unfinished cash periods are public as they arrive. The first review covers observations through November 30, 2027. Any revised model gets a separate experiment. [Forward protocol](STRATEGY_SPY_FORWARD.md)
 
 The existing 2022–October 2026 results remain available for inspection. Changing a rule in response to those results makes that history development evidence for the new rule.
 

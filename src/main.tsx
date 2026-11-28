@@ -14,7 +14,8 @@ const HistoricalReplay = lazy(() => import('./lab/HistoricalReplay'))
 const currentRoute = () =>
   ['#lab', '#lab-spy-daily', '#lab-spy-costs'].includes(window.location.hash)
     ? 'daily'
-    : window.location.hash === '#lab-timing-test' ||
+    : window.location.hash === '#lab-forward' ||
+        window.location.hash === '#lab-timing-test' ||
         window.location.hash === '#lab-exposure' ||
         window.location.hash === '#lab-reversal-filters' ||
         window.location.hash === '#lab-full-history' ||
@@ -100,9 +101,9 @@ function Root() {
   const historical = route.startsWith('#lab-history-')
   return (
     <>
-      {route === 'daily' && (
+      {(route === 'daily' || route === '#lab-forward') && (
         <Suspense fallback={<p>Opening Strategy Lab…</p>}>
-          <SpyDailyPage />
+          <SpyDailyPage forward={route === '#lab-forward'} />
         </Suspense>
       )}
       {route === '#lab-timing-test' && (

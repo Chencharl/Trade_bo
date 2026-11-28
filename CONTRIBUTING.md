@@ -25,10 +25,11 @@ npm test
 npm run build
 npx playwright install chromium firefox webkit
 npm run test:e2e
+python3 -m pip install -r scripts/requirements-forward.txt
 python3 -m unittest discover -s tests -v
 ```
 
-Python 3.10 or newer is needed for the existing research-desk tests. On Linux, install browser system dependencies with `npx playwright install --with-deps chromium firefox webkit`.
+CI runs the Python research and forward tests on Python 3.12. Install the Python dependencies in a virtual environment. On Linux, install browser system dependencies with `npx playwright install --with-deps chromium firefox webkit`.
 
 ## Keep experiments reproducible
 

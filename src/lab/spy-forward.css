@@ -1,0 +1,150 @@
+.fw .spy-intro {
+  padding-bottom: 18px;
+}
+.fw a {
+  color: #31577a;
+  text-underline-offset: 3px;
+}
+.fw-status,
+.fw-accounts,
+.fw-spell {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.fw-status {
+  padding: 14px 18px;
+  background: #eaf0f7;
+  border-block: 1px solid #cbd7e5;
+}
+.fw-status span,
+.fw-accounts span,
+.fw-accounts small,
+.fw-spell span,
+.fw-heading > span {
+  display: block;
+  color: #445a74;
+  font-size: 13px;
+}
+.fw-status strong,
+.fw-spell strong {
+  font:
+    600 18px/1.4 'Space Grotesk',
+    sans-serif;
+}
+.fw-section {
+  margin: 18px 0;
+  border: 1px solid var(--lab-line);
+  border-radius: 5px;
+  background: white;
+  padding: 18px 20px;
+}
+.fw-heading,
+.fw-pager,
+.fw-links {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  flex-wrap: wrap;
+}
+.fw-section h2 {
+  margin: 0 0 7px;
+}
+.fw-accounts {
+  margin: 12px 0;
+}
+.fw-accounts strong {
+  display: block;
+  font:
+    600 clamp(20px, 2.7vw, 30px)/1.4 'Space Grotesk',
+    sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+.fw-gaps,
+.fw-empty,
+.fw-window,
+.fw-section p {
+  font-size: 14px;
+  line-height: 1.55;
+  color: #40556d;
+}
+.fw-gaps {
+  border-top: 1px solid #d8e0eb;
+  padding-top: 9px;
+}
+.fw-empty {
+  margin: 2px 0 0;
+}
+.fw-section label,
+.fw-details {
+  font-size: 13px;
+}
+.fw-spell {
+  border-block: 1px solid #d8e0eb;
+  padding: 12px 0;
+}
+.fw-spell div:first-child strong {
+  color: #216b65;
+}
+.fw-spell div:nth-child(2) strong {
+  color: #8d492f;
+}
+.fw-period {
+  font-variant-numeric: tabular-nums;
+}
+.fw-scroll {
+  overflow-x: auto;
+  max-width: 100%;
+}
+.fw-scroll td small {
+  display: block;
+  color: #4a617b;
+}
+.fw-activation,
+.fw-links,
+.fw-pager {
+  justify-content: flex-start;
+  font-size: 13px;
+}
+.fw-delay {
+  border-left: 3px solid #a86a31;
+  padding: 8px 12px;
+  background: #faf2e9;
+  font-size: 13px;
+}
+@media (max-width: 650px) {
+  .fw-section {
+    padding: 12px;
+  }
+  .fw-status,
+  .fw-spell {
+    grid-template-columns: 1fr;
+    gap: 5px;
+  }
+  .fw-status > div,
+  .fw-spell > div {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 6px;
+  }
+  .fw-status strong {
+    font-size: 15px;
+  }
+  .fw-accounts {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .fw-accounts > div {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: baseline;
+  }
+  .fw-accounts small {
+    grid-column: 1/-1;
+  }
+  .fw-accounts strong {
+    font-size: 20px;
+  }
+}
